@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:friend_tracker/services/authentication.dart';
+import 'package:friend_tracker/views/signInUp/sign_up.dart';
 
 class SignIn extends StatefulWidget {
   final BaseAuth auth;
@@ -53,8 +54,9 @@ class _SignInState extends State<SignIn> {
           userId = await widget.auth.signIn(_email, _password);
           print('Signed in: $userId');
         } else {
-          //userId = await widget.auth.signUp(_email, _password);
-          //print('Signed up user: $userId');
+          userId = await widget.auth.signUp(_email, _password);
+          print('Signed up user: $userId');
+          //Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context)=>new SignUp(auth: widget.auth,),),);
         }
         setState(() {
           _isLoading = false;

@@ -3,6 +3,10 @@ import 'package:friend_tracker/services/authentication.dart';
 import 'package:friend_tracker/services/getLocation.dart';
 import 'package:friend_tracker/views/signInUp/sign_in.dart';
 class HomePage extends StatefulWidget {
+  final BaseAuth auth;
+
+  HomePage({this.auth});
+
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -22,7 +26,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    auth.getCurrentUser().then((user){
+    widget.auth.getCurrentUser().then((user){
       setState(() {
         if(user!=null){
           _userId=user?.uid;
@@ -33,7 +37,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onLoggedIn() {
-    auth.getCurrentUser().then((user){
+    widget.auth.getCurrentUser().then((user){
       setState(() {
         _userId = user.uid.toString();
       });
@@ -70,7 +74,7 @@ class _HomePageState extends State<HomePage> {
         break;
       case AuthStatus.NOT_LOGGED_IN:
         return new SignIn(
-          auth: auth,
+          auth: widget.auth,
           onSignedIn: _onLoggedIn,
         );
         break;
@@ -78,7 +82,7 @@ class _HomePageState extends State<HomePage> {
         if (_userId.length > 0 && _userId != null) {
           return new GetLocation(
             userId: _userId,
-            auth: auth,
+            auth: widget.auth,
             onSignedOut: _onSignedOut,
           );
         } else return _buildWaitingScreen();

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:friend_tracker/services/authentication.dart';
 import 'package:friend_tracker/services/connectionStatusSingleton.dart';
+import 'package:friend_tracker/util/authInheritedWidget.dart';
 import 'package:friend_tracker/views/ConnectionError.dart';
 import 'package:friend_tracker/views/signInUp/sign_in.dart';
 import 'package:friend_tracker/views/signInUp/sign_up.dart';
@@ -15,11 +16,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Friend Tracker',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page',auth:new Auth()),
+      home: MyHomePage(title: 'Home Page',auth:new Auth()),
     );
   }
 }
@@ -57,7 +58,7 @@ class _MyHomePageState extends State<MyHomePage> {
     SystemChrome.setEnabledSystemUIOverlays([]);
     return Scaffold(
       body: Center(
-        child: (isOffline)? new ConnectionError() : new SplashScreen(),
+        child: (isOffline)? new ConnectionError() : new AuthInheritedWidget(auth:new Auth(),child:new SplashScreen(auth: new Auth(),)),
       ),
     );
   }

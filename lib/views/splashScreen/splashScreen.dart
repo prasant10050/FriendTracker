@@ -1,8 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:friend_tracker/services/authentication.dart';
 import 'package:friend_tracker/views/splashScreen/splashScreenB.dart';
 class SplashScreen extends StatefulWidget {
+  final BaseAuth auth;
+
+  SplashScreen({this.auth});
+
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }

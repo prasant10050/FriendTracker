@@ -116,11 +116,23 @@ class _GetLocationState extends State<GetLocation> {
       ],
     );
 
+    _signOut() async {
+      try {
+        await widget.auth.signOut();
+        widget.onSignedOut();
+      } catch (e) {
+        print(e);
+      }
+    }
+
     return Scaffold(
-      body: Center(
-        child: Container(
-          child: _startLocation==null?CircularProgressIndicator():mapView,
-        ),
+      appBar: AppBar(
+        actions: <Widget>[
+          new IconButton(icon: Icon(Icons.power), onPressed: _signOut)
+      ],
+      ),
+      body: Container(
+        child: _currentLocation==null?CircularProgressIndicator():mapView,
       ),
     );
   }

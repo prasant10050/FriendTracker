@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "721404346333",
+    "firebase_url": "https://friends-tracker-578e7.firebaseio.com",
+    "project_id": "friends-tracker-578e7",
+    "storage_bucket": "friends-tracker-578e7.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:721404346333:android:d0a46eb24bb1bca1",
+        "android_client_info": {
+          "package_name": "com.altorum.friendtracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "721404346333-8c0maf6an0fm06e15bkvp5u16dd21mpd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWVfV8s5-ejihj3H-Xvchx-CIjAOff6Hc"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

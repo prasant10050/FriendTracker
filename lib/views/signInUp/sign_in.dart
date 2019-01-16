@@ -53,10 +53,10 @@ class _SignInState extends State<SignIn> {
         if (_formMode == FormMode.LOGIN) {
           userId = await widget.auth.signIn(_email, _password);
           print('Signed in: $userId');
-        } else {
+        } if(_formMode==FormMode.SIGNUP) {
           userId = await widget.auth.signUp(_email, _password);
           print('Signed up user: $userId');
-          //Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context)=>new SignUp(auth: widget.auth,),),);
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context)=>new SignUp(auth: widget.auth,),),);
         }
         setState(() {
           _isLoading = false;
@@ -200,9 +200,10 @@ class _SignInState extends State<SignIn> {
       padding: EdgeInsets.all(16.0),
       child: Form(
         key: formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisAlignment: MainAxisAlignment.start,
+        child: ListView(
+          shrinkWrap: true,
+          //crossAxisAlignment: CrossAxisAlignment.stretch,
+          //mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
             logo,
             SizedBox(height: 10.0,),
@@ -243,6 +244,7 @@ class _SignInState extends State<SignIn> {
     _context=context;
     _isIos = Theme.of(context).platform == TargetPlatform.iOS;
     return Scaffold(
+      resizeToAvoidBottomPadding: false,
       appBar: AppBar(
         title: Text("Sign In"),
       ),

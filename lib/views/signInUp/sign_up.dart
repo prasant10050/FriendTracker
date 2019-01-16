@@ -1,63 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:friend_tracker/services/authentication.dart';
 
 class SignUp extends StatefulWidget {
-
   final BaseAuth auth;
   final VoidCallback onSignedUp;
+
   @override
   _SignUpState createState() => _SignUpState();
 
   SignUp({this.auth, this.onSignedUp});
 }
 
+enum FormMode { LOGIN, SIGNUP }
+
 class _SignUpState extends State<SignUp> {
   static final scaffoldKey = new GlobalKey<ScaffoldState>();
   static final formKey = new GlobalKey<FormState>();
-  static String _email,_password,_firstName,_lastName;
+  static String _firstName, _lastName, _phoneNUmber;
 
+  FormMode _formMode = FormMode.LOGIN;
+  bool _isIos;
+  bool _isLoading;
+  String _errorMessage;
 
-
-  static var emailAddress=TextFormField(
-    keyboardType: TextInputType.emailAddress,
-    autofocus: false,
-    maxLines: 1,
-    decoration: InputDecoration(
-      hintText: "Enter a email address",
-      labelText: "Email",
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
-    ),
-    validator: (value)=>isValidEmail(value) ? null : 'Please enter a valid email address',
-    onSaved: (input)=>_email=input,
-  );
-
-  static bool isValidEmail(String input) {
-    final RegExp regex = new RegExp(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?)*$");
-    return regex.hasMatch(input);
-  }
-
-  static var password=TextFormField(
-    keyboardType: TextInputType.emailAddress,
-    autofocus: false,
-    obscureText: true,
-    maxLines: 1,
-    decoration: InputDecoration(
-      hintText: "Enter assword",
-      labelText: "Password",
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
-    ),
-    validator: (input)=>isValidPassword(input)?null:"Password lenght mus be 6 or more",
-    onSaved: (input)=>_password=input,
-  );
-
-  static bool isValidPassword(String input){
-    if(input.length<6 || input.trim().isEmpty)
-      return false;
-    return true;
-  }
-
-  static var firstName=TextFormField(
+  static var firstName = TextFormField(
     keyboardType: TextInputType.text,
     autofocus: false,
     maxLines: 1,
@@ -66,17 +34,18 @@ class _SignUpState extends State<SignUp> {
       labelText: "First Name",
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
     ),
-    validator: (input)=>isValidPassword(input)?null:"First name is required",
-    onSaved: (input)=>_firstName=input,
+    inputFormatters: [new LengthLimitingTextInputFormatter(15)],
+    validator: (input) =>
+        isValidFirstName(input) ? null : "First name is required",
+    onSaved: (input) => _firstName = input,
   );
 
-  static bool isValidFirstName(String input){
-    if(input.trim().isEmpty)
-      return false;
+  static bool isValidFirstName(String input) {
+    if (input.trim().isEmpty) return false;
     return true;
   }
 
-  static var lastName=TextFormField(
+  static var lastName = TextFormField(
     keyboardType: TextInputType.text,
     autofocus: false,
     maxLines: 1,
@@ -85,48 +54,168 @@ class _SignUpState extends State<SignUp> {
       labelText: "Last Name",
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
     ),
-    validator: (input)=>isValidPassword(input)?null:"Last name is required",
-    onSaved: (input)=>_lastName=input,
+    inputFormatters: [new LengthLimitingTextInputFormatter(15)],
+    validator: (input) =>
+        isValidLasName(input) ? null : "Last name is required",
+    onSaved: (input) => _lastName = input,
   );
 
-  static bool isValidLasName(String input){
-    if(input.trim().isEmpty)
-      return false;
+  static bool isValidLasName(String input) {
+    if (input.trim().isEmpty) return false;
     return true;
   }
 
-  static var logo=Hero(
-    tag: 'hero',
-    child: CircleAvatar(
-      backgroundColor: Colors.transparent,
-      radius: 48.0,
-      child: Image.asset('assets/location.png'),
+  var phoneNumber = TextFormField(
+    keyboardType: TextInputType.phone,
+    autofocus: false,
+    maxLines: 1,
+    decoration: InputDecoration(
+      hintText: "Enter mobile number",
+      labelText: "Mobile Number",
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
     ),
+    inputFormatters: [
+      new WhitelistingTextInputFormatter(
+          new RegExp(r'^[()\d -]{1,15}$')),
+    ],
+    validator: (input) =>
+        isValidPhoneNumber(input) ? null : "Phone number must be entered as (###)###-####",
+    onSaved: (input) => _phoneNUmber = input,
   );
 
-  static var form=new Form(
-    key:formKey,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: <Widget>[
-        logo,
-        SizedBox(height: 10.0,),
-        firstName,
-        SizedBox(height: 10.0,),
-        lastName,
-        SizedBox(height: 10.0,),
-        emailAddress,
-        SizedBox(height: 10.0,),
-        password,
-        SizedBox(height: 10.0,),
-      ],
-    ),
-  );
+  static bool isValidPhoneNumber(String input) {
+    final RegExp regex = new RegExp(r'^\(\d\d\d\)\d\d\d\-\d\d\d\d$');
+    return regex.hasMatch(input);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: form,
+
+    bool _validateAndSave() {
+      final form = formKey.currentState;
+      if (form.validate()) {
+        form.save();
+        return true;
+      }
+      return false;
+    }
+
+    void showMessage(String message, [MaterialColor color = Colors.red]) {
+      scaffoldKey.currentState
+          .showSnackBar(new SnackBar(backgroundColor: color, content: new Text(message)));
+    }
+
+    _validateAndSubmit() async {
+      setState(() {
+        _errorMessage = "";
+        _isLoading = true;
+      });
+      if (_validateAndSave()) {
+        String userId = "";
+        try {
+          if (_formMode == FormMode.LOGIN) {
+            /*userId = await widget.auth.signIn(_email, _password);
+            print('Signed in: $userId');*/
+          }
+          if (_formMode == FormMode.SIGNUP) {
+            /*userId = await widget.auth.signUp(_email, _password);
+            print('Signed up user: $userId');
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (BuildContext context) => new SignUp(
+                      auth: widget.auth,
+                    ),
+              ),
+            );*/
+          }
+          setState(() {
+            _isLoading = false;
+          });
+
+          if (userId.length > 0 && userId != null) {
+            //widget.onSignedIn();
+          }
+        } catch (e) {
+          print('Error: $e');
+          setState(() {
+            _isLoading = false;
+            if (_isIos) {
+              _errorMessage = e.details;
+            } else
+              _errorMessage = e.message;
+          });
+        }
+      }
+    }
+
+    Widget _showPrimaryButton() {
+      return new Padding(
+          padding: EdgeInsets.fromLTRB(0.0, 45.0, 0.0, 0.0),
+          child: SizedBox(
+            height: 40.0,
+            child: new RaisedButton(
+              elevation: 5.0,
+              shape: new RoundedRectangleBorder(
+                  borderRadius: new BorderRadius.circular(30.0)),
+              color: Colors.blue,
+              child: _formMode == FormMode.LOGIN
+                  ? new Text('Login',
+                      style: new TextStyle(fontSize: 20.0, color: Colors.white))
+                  : new Text('Create account',
+                      style:
+                          new TextStyle(fontSize: 20.0, color: Colors.white)),
+              onPressed: _validateAndSubmit,
+            ),
+          ));
+    }
+
+    var logo = Hero(
+      tag: 'hero',
+      child: CircleAvatar(
+        backgroundColor: Colors.transparent,
+        radius: 48.0,
+        child: Image.asset(
+          'assets/location4.jpg',
+          height: MediaQuery.of(context).size.height * .5,
+          width: MediaQuery.of(context).size.width * .5,
+        ),
+      ),
+    );
+
+    var form = new Form(
+      key: formKey,
+      child: ListView(
+        shrinkWrap: true,
+        children: <Widget>[
+          logo,
+          SizedBox(
+            height: 10.0,
+          ),
+          firstName,
+          SizedBox(
+            height: 10.0,
+          ),
+          lastName,
+          SizedBox(
+            height: 10.0,
+          ),
+          phoneNumber,
+          SizedBox(
+            height: 10.0,
+          ),
+          _showPrimaryButton(),
+        ],
+      ),
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Sign Up"),
+      ),
+      body: Container(
+        child: form,
+      ),
     );
   }
 }

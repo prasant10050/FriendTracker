@@ -58,7 +58,7 @@ class _MyHomePageState extends State<MyHomePage> {
     SystemChrome.setEnabledSystemUIOverlays([]);
     return Scaffold(
       body: Center(
-        child: (isOffline)? new ConnectionError() : new AuthInheritedWidget(auth:new Auth(),child:new SplashScreen(auth: new Auth(),)),
+        child: (isOffline)? new ConnectionError() : new SplashScreen(auth: new Auth(),),
       ),
     );
   }

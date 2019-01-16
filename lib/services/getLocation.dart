@@ -97,11 +97,12 @@ class _GetLocationState extends State<GetLocation> {
   @override
   Widget build(BuildContext context) {
 
-    var mapView=Column(
+    var mapView=Stack(
+      fit: StackFit.expand,
       children: <Widget>[
         Container(
-          height: MediaQuery.of(context).size.height,
-          width: MediaQuery.of(context).size.width,
+          //height: MediaQuery.of(context).size.height,
+          //width: MediaQuery.of(context).size.width,
           child: GoogleMap(
             onMapCreated: _onMapCreated,
             options: GoogleMapOptions(
@@ -126,13 +127,14 @@ class _GetLocationState extends State<GetLocation> {
     }
 
     return Scaffold(
+      //resizeToAvoidBottomPadding: false,
       appBar: AppBar(
         actions: <Widget>[
-          new IconButton(icon: Icon(Icons.power), onPressed: _signOut)
+          new IconButton(icon: Icon(Icons.power_settings_new,size: 25.0,), onPressed: _signOut)
       ],
       ),
       body: Container(
-        child: _currentLocation==null?CircularProgressIndicator():mapView,
+        child: _startLocation==null?CircularProgressIndicator():mapView,
       ),
     );
   }

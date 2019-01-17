@@ -14,7 +14,7 @@ class _SplashScreenBState extends State<SplashScreenB> {
     super.initState();
     Timer(
         Duration(
-          seconds: 1,
+          seconds: 2,
         ),
             (){
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context)=>new SplashScreenC()));

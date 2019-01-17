@@ -17,7 +17,7 @@ class GetLocation extends StatefulWidget {
 }
 
 class _GetLocationState extends State<GetLocation> {
-  var _location=new Location();
+  Location  _location=new Location();
   bool _permission = false;
   String error;
   Map<String, double> _startLocation;
@@ -35,49 +35,50 @@ class _GetLocationState extends State<GetLocation> {
     // TODO: implement initState
     super.initState();
     initPlatformState();
-    _locationSubscription =
-        _location.onLocationChanged().listen((Map<String,double> result) async{
-          setState(() {
-            _currentLocation = result;
-          });
+
+  }
+
+  @override
+  void dispose() {
+    _locationSubscription.cancel();
+    super.dispose();
+  }
+
+  initPlatformState() async {
+    Map<String, double> location;
+    try {
+      _permission = await _location.hasPermission();
+      location = await _location.getLocation();
+      _locationSubscription =
+          _location.onLocationChanged().listen((Map<String,double> result) async{
+            setState(() {
+              _currentLocation = result;
+            });
 
             if(marker != null) {
               mapController.removeMarker(marker);
             }
             marker = await mapController?.addMarker(
-                  MarkerOptions(
-                      position: LatLng(
-                        _currentLocation["latitude"],
-                        _currentLocation["longitude"],
-                      ),
-                      icon: BitmapDescriptor.defaultMarker
-                  )
-              );
-              mapController?.moveCamera(
-                CameraUpdate.newCameraPosition(
-                  CameraPosition(
-                    target: LatLng(
+                MarkerOptions(
+                    position: LatLng(
                       _currentLocation["latitude"],
                       _currentLocation["longitude"],
                     ),
-                    zoom: 20.0,
+                    icon: BitmapDescriptor.defaultMarker
+                )
+            );
+            mapController?.moveCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target: LatLng(
+                    _currentLocation["latitude"],
+                    _currentLocation["longitude"],
                   ),
+                  zoom: 20.0,
                 ),
-              );
-
-
-
-        });
-  }
-
-  initPlatformState() async {
-    Map<String, double> location;
-
-    try {
-      _permission = await _location.hasPermission();
-      location = await _location.getLocation();
-
-
+              ),
+            );
+          });
       error = null;
     } on PlatformException catch (e) {
       if (e.code == 'PERMISSION_DENIED') {
@@ -87,11 +88,10 @@ class _GetLocationState extends State<GetLocation> {
       }
       location = null;
     }
-
+    if (!mounted) return;
     setState(() {
       _startLocation = location;
     });
-
   }
 
   @override
@@ -134,7 +134,7 @@ class _GetLocationState extends State<GetLocation> {
       ],
       ),
       body: Container(
-        child: _startLocation==null?CircularProgressIndicator():mapView,
+        child: _currentLocation==null?CircularProgressIndicator():mapView,
       ),
     );
   }

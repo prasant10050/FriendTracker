@@ -1,16 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:friend_tracker/services/authentication.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:location/location.dart';
 
 class SignUp extends StatefulWidget {
   final BaseAuth auth;
   final VoidCallback onSignedUp;
+  String userId;
 
   @override
   _SignUpState createState() => _SignUpState();
 
-  SignUp({this.auth, this.onSignedUp});
+  SignUp({this.auth, this.onSignedUp,this.userId});
 }
 
 enum FormMode { LOGIN, SIGNUP }
@@ -24,6 +29,18 @@ class _SignUpState extends State<SignUp> {
   bool _isIos;
   bool _isLoading;
   String _errorMessage;
+  bool _permission = false;
+  String error;
+  Map<String, double> _startLocation;
+  Map<String, double> _currentLocation;
+  StreamSubscription<Map<String, double>> _locationSubscription;
+  GoogleMapController mapController;
+  Marker marker;
+  Location location=new Location();
+
+  void _onMapCreated(GoogleMapController controller) {
+    mapController = controller;
+  }
 
   static var firstName = TextFormField(
     keyboardType: TextInputType.text,
@@ -75,11 +92,11 @@ class _SignUpState extends State<SignUp> {
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
     ),
     inputFormatters: [
-      new WhitelistingTextInputFormatter(
-          new RegExp(r'^[()\d -]{1,15}$')),
+      new WhitelistingTextInputFormatter(new RegExp(r'^[()\d -]{1,15}$')),
     ],
-    validator: (input) =>
-        isValidPhoneNumber(input) ? null : "Phone number must be entered as (###)###-####",
+    validator: (input) => isValidPhoneNumber(input)
+        ? null
+        : "Phone number must be entered as (###)###-####",
     onSaved: (input) => _phoneNUmber = input,
   );
 
@@ -89,8 +106,72 @@ class _SignUpState extends State<SignUp> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  void initState(){
+    super.initState();
+    initPlatformState();
+    /*_locationSubscription = location.onLocationChanged().listen((Map<String,double> value) async {
+      setState(() {
+        _currentLocation = value;
+      })
 
+    });*/
+    
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _locationSubscription.cancel();
+  }
+
+  initPlatformState() async {
+    Map<String, double> _location;
+    try {
+      _permission = await location.hasPermission();
+      _location = await location.getLocation();
+      _locationSubscription=location.onLocationChanged().listen((Map<String,double> value) async{
+        setState(() {
+          _currentLocation=value;
+        });
+        if (marker != null) {
+          mapController.removeMarker(marker);
+        }
+        marker = await mapController?.addMarker(MarkerOptions(
+            position: LatLng(
+              _currentLocation["latitude"],
+              _currentLocation["longitude"],
+            ),
+            icon: BitmapDescriptor.defaultMarkerWithHue(240),),);
+        mapController?.moveCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(
+                _currentLocation["latitude"],
+                _currentLocation["longitude"],
+              ),
+              zoom: 20.0,
+            ),
+          ),
+        );
+      });
+      error = null;
+    } on PlatformException catch (e) {
+      if (e.code == 'PERMISSION_DENIED') {
+        error = 'Permission denied';
+      } else if (e.code == 'PERMISSION_DENIED_NEVER_ASK') {
+        error =
+            'Permission denied - please ask the user to enable it from the app settings';
+      }
+      _location = null;
+    }
+    if (!mounted) return;
+    setState(() {
+      _startLocation = _location;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     bool _validateAndSave() {
       final form = formKey.currentState;
       if (form.validate()) {
@@ -101,8 +182,8 @@ class _SignUpState extends State<SignUp> {
     }
 
     void showMessage(String message, [MaterialColor color = Colors.red]) {
-      scaffoldKey.currentState
-          .showSnackBar(new SnackBar(backgroundColor: color, content: new Text(message)));
+      scaffoldKey.currentState.showSnackBar(
+          new SnackBar(backgroundColor: color, content: new Text(message)));
     }
 
     _validateAndSubmit() async {
@@ -111,14 +192,14 @@ class _SignUpState extends State<SignUp> {
         _isLoading = true;
       });
       if (_validateAndSave()) {
-        String userId = "";
+        String userId = widget.userId;
         try {
-          if (_formMode == FormMode.LOGIN) {
-            /*userId = await widget.auth.signIn(_email, _password);
-            print('Signed in: $userId');*/
+          /*if (_formMode == FormMode.LOGIN) {
+            userId = await widget.auth.signIn(_email, _password);
+            print('Signed in: $userId');
           }
           if (_formMode == FormMode.SIGNUP) {
-            /*userId = await widget.auth.signUp(_email, _password);
+            userId = await widget.auth.signUp(_email, _password);
             print('Signed up user: $userId');
             Navigator.pushReplacement(
               context,
@@ -127,12 +208,11 @@ class _SignUpState extends State<SignUp> {
                       auth: widget.auth,
                     ),
               ),
-            );*/
-          }
+            );
+          }*/
           setState(() {
             _isLoading = false;
           });
-
           if (userId.length > 0 && userId != null) {
             //widget.onSignedIn();
           }
@@ -159,12 +239,8 @@ class _SignUpState extends State<SignUp> {
               shape: new RoundedRectangleBorder(
                   borderRadius: new BorderRadius.circular(30.0)),
               color: Colors.blue,
-              child: _formMode == FormMode.LOGIN
-                  ? new Text('Login',
-                      style: new TextStyle(fontSize: 20.0, color: Colors.white))
-                  : new Text('Create account',
-                      style:
-                          new TextStyle(fontSize: 20.0, color: Colors.white)),
+              child: new Text('Submit',
+                  style: new TextStyle(fontSize: 20.0, color: Colors.white)),
               onPressed: _validateAndSubmit,
             ),
           ));
@@ -181,6 +257,27 @@ class _SignUpState extends State<SignUp> {
           width: MediaQuery.of(context).size.width * .5,
         ),
       ),
+    );
+
+    var mapView = Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        Container(
+          padding: EdgeInsets.all(10.0),
+          height: MediaQuery.of(context).size.height*.5,
+          width: MediaQuery.of(context).size.width*.5,
+          child: GoogleMap(
+            onMapCreated: _onMapCreated,
+            options: GoogleMapOptions(
+              cameraPosition: CameraPosition(
+                  target: LatLng(_currentLocation["latitude"],
+                      _currentLocation["longitude"]),
+                  zoom: 20.0),
+              mapType: MapType.normal,
+            ),
+          ),
+        ),
+      ],
     );
 
     var form = new Form(
@@ -213,8 +310,17 @@ class _SignUpState extends State<SignUp> {
       appBar: AppBar(
         title: Text("Sign Up"),
       ),
-      body: Container(
-        child: form,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          form,
+          Expanded(
+            flex: 2,
+            child:
+                _currentLocation == null ? CircularProgressIndicator() : mapView,
+          ),
+        ],
       ),
     );
   }

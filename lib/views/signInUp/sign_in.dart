@@ -56,7 +56,7 @@ class _SignInState extends State<SignIn> {
         } if(_formMode==FormMode.SIGNUP) {
           userId = await widget.auth.signUp(_email, _password);
           print('Signed up user: $userId');
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context)=>new SignUp(auth: widget.auth,),),);
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context)=>new SignUp(auth: widget.auth,userId: userId,),),);
         }
         setState(() {
           _isLoading = false;
@@ -236,6 +236,8 @@ class _SignInState extends State<SignIn> {
     _errorMessage = "";
     _isLoading = false;
     super.initState();
+    if (!mounted)
+      return;
   }
 
   static BuildContext _context;

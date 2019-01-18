@@ -14,7 +14,7 @@ class _SplashScreenBState extends State<SplashScreenB> {
     super.initState();
     Timer(
         Duration(
-          seconds: 2,
+          seconds: 1,
         ),
             (){
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context)=>new SplashScreenC()));
@@ -53,7 +53,7 @@ class _SplashScreenBState extends State<SplashScreenB> {
                 padding: EdgeInsets.only(top: 10.0,),
               ),
               Text(
-                "Screen B",
+                "Searching",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 24.0,

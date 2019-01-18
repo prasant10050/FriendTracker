@@ -17,7 +17,7 @@ class _SplashScreenCState extends State<SplashScreenC> {
     super.initState();
     Timer(
         Duration(
-          seconds: 2,
+          seconds: 1,
         ),
             (){
           Navigator.pushReplacement(context, MaterialPageRoute(builder: (BuildContext context)=>new HomePage(auth:new Auth())));
@@ -57,7 +57,7 @@ class _SplashScreenCState extends State<SplashScreenC> {
                 padding: EdgeInsets.only(top: 10.0,),
               ),
               Text(
-                "Screen C",
+                "Location On",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 24.0,

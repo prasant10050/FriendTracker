@@ -60,7 +60,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 padding: EdgeInsets.only(top: 10.0,),
               ),
               Text(
-                "Screen A",
+                "City",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 24.0,

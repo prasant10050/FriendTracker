@@ -5,6 +5,7 @@ import 'package:friend_tracker/services/authentication.dart';
 import 'package:friend_tracker/views/map/map.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+
 class GetLocation extends StatefulWidget {
   final String userId;
   final BaseAuth auth;
@@ -17,7 +18,7 @@ class GetLocation extends StatefulWidget {
 }
 
 class _GetLocationState extends State<GetLocation> {
-  Location  _location=new Location();
+  Location _location ;
   bool _permission = false;
   String error;
   Map<String, double> _startLocation;
@@ -25,17 +26,45 @@ class _GetLocationState extends State<GetLocation> {
   StreamSubscription<Map<String, double>> _locationSubscription;
   GoogleMapController mapController;
   Marker marker;
-  Location location;
+  //Location location;
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
   }
+
   @override
   void initState() {
-    // TODO: implement initState
-    super.initState();
+    _location = new Location();
     initPlatformState();
+    super.initState();
+    _locationSubscription=_location.onLocationChanged().listen((Map<String, double> result) async {
+      setState(() {
+        _currentLocation = result;
+      });
 
+      if (marker != null) {
+        mapController.removeMarker(marker);
+      }
+      marker = await mapController?.addMarker(MarkerOptions(
+          position: LatLng(
+            _currentLocation["latitude"],
+            _currentLocation["longitude"],
+          ),
+          icon: BitmapDescriptor.defaultMarker,
+      ),
+      );
+      mapController?.moveCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(
+              _currentLocation["latitude"],
+              _currentLocation["longitude"],
+            ),
+            zoom: 20.0,
+          ),
+        ),
+      );
+    });
   }
 
   @override
@@ -49,42 +78,13 @@ class _GetLocationState extends State<GetLocation> {
     try {
       _permission = await _location.hasPermission();
       location = await _location.getLocation();
-      _locationSubscription =
-          _location.onLocationChanged().listen((Map<String,double> result) async{
-            setState(() {
-              _currentLocation = result;
-            });
-
-            if(marker != null) {
-              mapController.removeMarker(marker);
-            }
-            marker = await mapController?.addMarker(
-                MarkerOptions(
-                    position: LatLng(
-                      _currentLocation["latitude"],
-                      _currentLocation["longitude"],
-                    ),
-                    icon: BitmapDescriptor.defaultMarker
-                )
-            );
-            mapController?.moveCamera(
-              CameraUpdate.newCameraPosition(
-                CameraPosition(
-                  target: LatLng(
-                    _currentLocation["latitude"],
-                    _currentLocation["longitude"],
-                  ),
-                  zoom: 20.0,
-                ),
-              ),
-            );
-          });
       error = null;
     } on PlatformException catch (e) {
       if (e.code == 'PERMISSION_DENIED') {
         error = 'Permission denied';
       } else if (e.code == 'PERMISSION_DENIED_NEVER_ASK') {
-        error = 'Permission denied - please ask the user to enable it from the app settings';
+        error =
+            'Permission denied - please ask the user to enable it from the app settings';
       }
       location = null;
     }
@@ -96,8 +96,7 @@ class _GetLocationState extends State<GetLocation> {
 
   @override
   Widget build(BuildContext context) {
-
-    var mapView=Stack(
+    var mapView = Stack(
       fit: StackFit.expand,
       children: <Widget>[
         Container(
@@ -107,9 +106,8 @@ class _GetLocationState extends State<GetLocation> {
             onMapCreated: _onMapCreated,
             options: GoogleMapOptions(
               cameraPosition: CameraPosition(
-                  target: LatLng(_currentLocation["latitude"], _currentLocation["longitude"]),
-                  zoom: 20.0
-              ),
+                  target: LatLng(_currentLocation["latitude"], _currentLocation["longitude"],),
+                  zoom: 20.0),
               mapType: MapType.normal,
             ),
           ),
@@ -121,6 +119,7 @@ class _GetLocationState extends State<GetLocation> {
       try {
         await widget.auth.signOut();
         widget.onSignedOut();
+        //_locationSubscription.cancel();
       } catch (e) {
         print(e);
       }
@@ -130,11 +129,16 @@ class _GetLocationState extends State<GetLocation> {
       //resizeToAvoidBottomPadding: false,
       appBar: AppBar(
         actions: <Widget>[
-          new IconButton(icon: Icon(Icons.power_settings_new,size: 25.0,), onPressed: _signOut)
-      ],
+          new IconButton(
+              icon: Icon(
+                Icons.power_settings_new,
+                size: 25.0,
+              ),
+              onPressed: _signOut)
+        ],
       ),
       body: Container(
-        child: _currentLocation==null?CircularProgressIndicator():mapView,
+        child: _currentLocation == null ? CircularProgressIndicator() : mapView,
       ),
     );
   }

@@ -1,11 +1,13 @@
 import 'dart:async';
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
+import 'package:friend_tracker/Model/User.dart';
 import 'package:friend_tracker/services/authentication.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:friend_tracker/services/userManagement.dart';
 
 class SignUp extends StatefulWidget {
   final BaseAuth auth;
@@ -15,7 +17,7 @@ class SignUp extends StatefulWidget {
   @override
   _SignUpState createState() => _SignUpState();
 
-  SignUp({this.auth, this.onSignedUp,this.userId});
+  SignUp({this.auth, this.onSignedUp, this.userId});
 }
 
 enum FormMode { LOGIN, SIGNUP }
@@ -25,7 +27,8 @@ class _SignUpState extends State<SignUp> {
   static final formKey = new GlobalKey<FormState>();
   static String _firstName, _lastName, _phoneNUmber;
 
-  FormMode _formMode = FormMode.LOGIN;
+  FormMode _formMode = FormMode.SIGNUP;
+  Location location;
   bool _isIos;
   bool _isLoading;
   String _errorMessage;
@@ -36,11 +39,6 @@ class _SignUpState extends State<SignUp> {
   StreamSubscription<Map<String, double>> _locationSubscription;
   GoogleMapController mapController;
   Marker marker;
-  Location location=new Location();
-
-  void _onMapCreated(GoogleMapController controller) {
-    mapController = controller;
-  }
 
   static var firstName = TextFormField(
     keyboardType: TextInputType.text,
@@ -105,17 +103,46 @@ class _SignUpState extends State<SignUp> {
     return regex.hasMatch(input);
   }
 
-  @override
-  void initState(){
-    super.initState();
-    initPlatformState();
-    /*_locationSubscription = location.onLocationChanged().listen((Map<String,double> value) async {
-      setState(() {
-        _currentLocation = value;
-      })
+  void _onMapCreated(GoogleMapController controller) {
+    mapController = controller;
+  }
 
-    });*/
-    
+  @override
+  void initState() {
+    location = new Location();
+    initPlatformState();
+    super.initState();
+    _locationSubscription =
+        location.onLocationChanged().listen((Map<String, double> result) async {
+      setState(() {
+        _currentLocation = result;
+      });
+
+      if (marker != null) {
+        mapController.removeMarker(marker);
+      }
+      marker = await mapController?.addMarker(
+        MarkerOptions(
+          position: LatLng(
+            _currentLocation["latitude"],
+            _currentLocation["longitude"],
+          ),
+          icon: BitmapDescriptor.defaultMarker,
+          visible: true,
+        ),
+      );
+      await mapController?.moveCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(
+              _currentLocation["latitude"],
+              _currentLocation["longitude"],
+            ),
+            zoom: 20.0,
+          ),
+        ),
+      );
+    });
   }
 
   @override
@@ -129,31 +156,6 @@ class _SignUpState extends State<SignUp> {
     try {
       _permission = await location.hasPermission();
       _location = await location.getLocation();
-      _locationSubscription=location.onLocationChanged().listen((Map<String,double> value) async{
-        setState(() {
-          _currentLocation=value;
-        });
-        if (marker != null) {
-          mapController.removeMarker(marker);
-        }
-        marker = await mapController?.addMarker(MarkerOptions(
-            position: LatLng(
-              _currentLocation["latitude"],
-              _currentLocation["longitude"],
-            ),
-            icon: BitmapDescriptor.defaultMarkerWithHue(240),),);
-        mapController?.moveCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(
-                _currentLocation["latitude"],
-                _currentLocation["longitude"],
-              ),
-              zoom: 20.0,
-            ),
-          ),
-        );
-      });
       error = null;
     } on PlatformException catch (e) {
       if (e.code == 'PERMISSION_DENIED') {
@@ -197,25 +199,39 @@ class _SignUpState extends State<SignUp> {
           /*if (_formMode == FormMode.LOGIN) {
             userId = await widget.auth.signIn(_email, _password);
             print('Signed in: $userId');
-          }
-          if (_formMode == FormMode.SIGNUP) {
-            userId = await widget.auth.signUp(_email, _password);
-            print('Signed up user: $userId');
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (BuildContext context) => new SignUp(
-                      auth: widget.auth,
-                    ),
-              ),
-            );
           }*/
+          if (_formMode == FormMode.SIGNUP) {
+            /*var newUser = {};
+            var userName = {};
+            var userLocation = {};
+            //username
+            userName['firstname'] = firstName;
+            userName['lastname'] = lastName;
+            //userlocation
+            userLocation['latitude'] = _currentLocation['latitude'];
+            userLocation['longitude'] = _currentLocation['longitude'];
+            //new user data
+            newUser['phone'] = phoneNumber;
+            newUser['name'] = userName;
+            newUser['location'] = userLocation;*/
+            //store new user into database
+            Name name = new Name(
+                firstName: firstName.toString(), lastName: lastName.toString());
+            ULocation ulocation = new ULocation(
+                latitude: _currentLocation['latitude'],
+                longitude: _currentLocation['longitude']);
+            User user = new User(
+                name: name, phone: phoneNumber.toString(), location: ulocation);
+            BaseDatabase userDatabase = new UserDatabase();
+            String status = await userDatabase.addNewUser(userId, user);
+            print('Status: $status');
+          }
           setState(() {
             _isLoading = false;
           });
-          if (userId.length > 0 && userId != null) {
+          /*if (userId.length > 0 && userId != null) {
             //widget.onSignedIn();
-          }
+          }*/
         } catch (e) {
           print('Error: $e');
           setState(() {
@@ -231,7 +247,7 @@ class _SignUpState extends State<SignUp> {
 
     Widget _showPrimaryButton() {
       return new Padding(
-          padding: EdgeInsets.fromLTRB(0.0, 45.0, 0.0, 0.0),
+          padding: EdgeInsets.fromLTRB(0.0, 15.0, 0.0, 0.0),
           child: SizedBox(
             height: 40.0,
             child: new RaisedButton(
@@ -259,50 +275,55 @@ class _SignUpState extends State<SignUp> {
       ),
     );
 
-    var mapView = Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        Container(
-          padding: EdgeInsets.all(10.0),
-          height: MediaQuery.of(context).size.height*.5,
-          width: MediaQuery.of(context).size.width*.5,
-          child: GoogleMap(
-            onMapCreated: _onMapCreated,
-            options: GoogleMapOptions(
-              cameraPosition: CameraPosition(
-                  target: LatLng(_currentLocation["latitude"],
-                      _currentLocation["longitude"]),
-                  zoom: 20.0),
-              mapType: MapType.normal,
-            ),
-          ),
+    var mapView = Container(
+      padding: EdgeInsets.all(10.0),
+      height: MediaQuery.of(context).size.height * .5,
+      width: MediaQuery.of(context).size.width,
+      decoration: BoxDecoration(
+        //border: Border.all(width: 3.0),
+        borderRadius: BorderRadius.circular(4.0),
+      ),
+      child: GoogleMap(
+        onMapCreated: _onMapCreated,
+        options: GoogleMapOptions(
+          cameraPosition: CameraPosition(
+              target: LatLng(
+                  _currentLocation["latitude"], _currentLocation["longitude"]),
+              zoom: 20.0),
+          mapType: MapType.normal,
         ),
-      ],
+      ),
     );
 
-    var form = new Form(
-      key: formKey,
-      child: ListView(
-        shrinkWrap: true,
-        children: <Widget>[
-          logo,
-          SizedBox(
-            height: 10.0,
-          ),
-          firstName,
-          SizedBox(
-            height: 10.0,
-          ),
-          lastName,
-          SizedBox(
-            height: 10.0,
-          ),
-          phoneNumber,
-          SizedBox(
-            height: 10.0,
-          ),
-          _showPrimaryButton(),
-        ],
+    var form = Container(
+      padding: EdgeInsets.all(16.0),
+      child: Form(
+        key: formKey,
+        child: ListView(
+          shrinkWrap: true,
+          children: <Widget>[
+            logo,
+            SizedBox(
+              height: 10.0,
+            ),
+            firstName,
+            SizedBox(
+              height: 10.0,
+            ),
+            lastName,
+            SizedBox(
+              height: 10.0,
+            ),
+            phoneNumber,
+            SizedBox(
+              height: 10.0,
+            ),
+            _showPrimaryButton(),
+            SizedBox(
+              height: 10.0,
+            ),
+          ],
+        ),
       ),
     );
 
@@ -310,15 +331,19 @@ class _SignUpState extends State<SignUp> {
       appBar: AppBar(
         title: Text("Sign Up"),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+      body: Stack(
+        /*crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,*/
         children: <Widget>[
           form,
-          Expanded(
-            flex: 2,
-            child:
-                _currentLocation == null ? CircularProgressIndicator() : mapView,
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Expanded(
+              flex: 2,
+              child: _currentLocation == null
+                  ? CircularProgressIndicator()
+                  : mapView,
+            ),
           ),
         ],
       ),

@@ -26,6 +26,8 @@ dependencies:
   connectivity: ^0.3.2
   location: ^1.4.1
   google_maps_flutter: ^0.0.3+3
+  font_awesome_flutter: ^8.2.0
+  rxdart:
 
 dev_dependencies:
   flutter_test:

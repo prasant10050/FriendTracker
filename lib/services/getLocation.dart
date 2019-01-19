@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:friend_tracker/services/authentication.dart';
+import 'package:friend_tracker/services/bloc/LocationBlocProvider.dart';
 import 'package:friend_tracker/views/map/map.dart';
+import 'package:friend_tracker/views/showAllUsers.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 
@@ -18,7 +21,7 @@ class GetLocation extends StatefulWidget {
 }
 
 class _GetLocationState extends State<GetLocation> {
-  Location _location ;
+  Location _location =new Location();
   bool _permission = false;
   String error;
   Map<String, double> _startLocation;
@@ -34,7 +37,7 @@ class _GetLocationState extends State<GetLocation> {
 
   @override
   void initState() {
-    _location = new Location();
+    /*_location = new Location();*/
     initPlatformState();
     super.initState();
     _locationSubscription=_location.onLocationChanged().listen((Map<String, double> result) async {
@@ -134,7 +137,13 @@ class _GetLocationState extends State<GetLocation> {
                 Icons.power_settings_new,
                 size: 25.0,
               ),
-              onPressed: _signOut)
+              onPressed: _signOut),
+          new IconButton(
+              icon: Icon(FontAwesomeIcons.users),
+              onPressed: (){
+                Navigator.push(context, MaterialPageRoute(builder: (BuildContext context)=>new ShowAllUsers(),),);
+              },
+          ),
         ],
       ),
       body: Container(
@@ -143,3 +152,6 @@ class _GetLocationState extends State<GetLocation> {
     );
   }
 }
+
+
+

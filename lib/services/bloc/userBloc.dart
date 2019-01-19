@@ -1,29 +1,27 @@
 import 'dart:async';
-
-import 'package:flutter/material.dart';
 import 'package:friend_tracker/Model/User.dart';
-import 'package:location/location.dart';
+
 
 class UserBloc {
   User user;
 
-  StreamController<User> _userController = StreamController<User>();
+  StreamController<User> userController = StreamController<User>();
 
-  StreamSink<User> get _inUser => _userController.sink;
+  StreamSink<User> get inUser => userController.sink;
 
-  Stream<User> get _outUser => _userController.stream;
+  Stream<User> get outUser => userController.stream;
 
 
   UserBloc(){
     user=new User();
-    _userController.stream.listen(handleUser);
+    userController.stream.listen(handleUser);
   }
 
   void handleUser(User user) {
-    _inUser.add(user);
+    inUser.add(user);
   }
 
   void dispose() {
-    _userController.close();
+    userController.close();
   }
 }

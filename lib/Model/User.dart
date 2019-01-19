@@ -1,7 +1,10 @@
+import 'package:firebase_database/firebase_database.dart';
+
 class User {
-  Name name;
-  ULocation location;
-  String phone;
+  String key;
+  final Name name;
+  final ULocation location;
+  final String phone;
 
   User({this.name, this.phone, this.location});
 
@@ -13,16 +16,21 @@ class User {
     );
   }
 
+  User.fromSnapshot(DataSnapshot snapshot)
+      : name = Name.fromSnapshot(snapshot.value['name']),
+        phone = snapshot.value['phone'],
+        location = ULocation.fromSnapshot(snapshot.value['location']);
+
   Map<String, dynamic> toJson() => {
-        'name': name,
+        'name': name.toJson(),
         'phone': phone,
-        'location': location,
+        'location': location.toJSon(),
       };
 }
 
 class Name {
-  String firstName;
-  String lastName;
+  final String firstName;
+  final String lastName;
 
   Name({this.firstName, this.lastName});
 
@@ -33,6 +41,10 @@ class Name {
     );
   }
 
+  Name.fromSnapshot(DataSnapshot snapshot)
+      : firstName = snapshot.value['firstname'],
+        lastName = snapshot.value['lastname'];
+
   Map<String, dynamic> toJson() => {
         'firstname': firstName,
         'lastname': lastName,
@@ -40,8 +52,8 @@ class Name {
 }
 
 class ULocation {
-  double latitude;
-  double longitude;
+  final double latitude;
+  final double longitude;
 
   ULocation({this.latitude, this.longitude});
 
@@ -51,6 +63,10 @@ class ULocation {
       longitude: parsedJson['longitude'],
     );
   }
+
+  ULocation.fromSnapshot(DataSnapshot snapshot)
+      : latitude = snapshot.value['snapshot'],
+        longitude = snapshot.value['longitude'];
 
   Map<String, dynamic> toJSon() => {
         'latitude': latitude,

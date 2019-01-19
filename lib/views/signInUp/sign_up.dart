@@ -23,9 +23,9 @@ class SignUp extends StatefulWidget {
 enum FormMode { LOGIN, SIGNUP }
 
 class _SignUpState extends State<SignUp> {
-  static final scaffoldKey = new GlobalKey<ScaffoldState>();
-  static final formKey = new GlobalKey<FormState>();
-  static String _firstName, _lastName, _phoneNUmber;
+  final scaffoldKey = new GlobalKey<ScaffoldState>();
+  final formKey = new GlobalKey<FormState>();
+  String _firstName, _lastName, _phoneNUmber;
 
   FormMode _formMode = FormMode.SIGNUP;
   Location location;
@@ -40,68 +40,6 @@ class _SignUpState extends State<SignUp> {
   GoogleMapController mapController;
   Marker marker;
 
-  static var firstName = TextFormField(
-    keyboardType: TextInputType.text,
-    autofocus: false,
-    maxLines: 1,
-    decoration: InputDecoration(
-      hintText: "Enter first name",
-      labelText: "First Name",
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
-    ),
-    inputFormatters: [new LengthLimitingTextInputFormatter(15)],
-    validator: (input) =>
-        isValidFirstName(input) ? null : "First name is required",
-    onSaved: (input) => _firstName = input,
-  );
-
-  static bool isValidFirstName(String input) {
-    if (input.trim().isEmpty) return false;
-    return true;
-  }
-
-  static var lastName = TextFormField(
-    keyboardType: TextInputType.text,
-    autofocus: false,
-    maxLines: 1,
-    decoration: InputDecoration(
-      hintText: "Enter last name",
-      labelText: "Last Name",
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
-    ),
-    inputFormatters: [new LengthLimitingTextInputFormatter(15)],
-    validator: (input) =>
-        isValidLasName(input) ? null : "Last name is required",
-    onSaved: (input) => _lastName = input,
-  );
-
-  static bool isValidLasName(String input) {
-    if (input.trim().isEmpty) return false;
-    return true;
-  }
-
-  var phoneNumber = TextFormField(
-    keyboardType: TextInputType.phone,
-    autofocus: false,
-    maxLines: 1,
-    decoration: InputDecoration(
-      hintText: "Enter mobile number",
-      labelText: "Mobile Number",
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
-    ),
-    inputFormatters: [
-      new WhitelistingTextInputFormatter(new RegExp(r'^[()\d -]{1,15}$')),
-    ],
-    validator: (input) => isValidPhoneNumber(input)
-        ? null
-        : "Phone number must be entered as (###)###-####",
-    onSaved: (input) => _phoneNUmber = input,
-  );
-
-  static bool isValidPhoneNumber(String input) {
-    final RegExp regex = new RegExp(r'^\(\d\d\d\)\d\d\d\-\d\d\d\d$');
-    return regex.hasMatch(input);
-  }
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
@@ -200,7 +138,7 @@ class _SignUpState extends State<SignUp> {
             userId = await widget.auth.signIn(_email, _password);
             print('Signed in: $userId');
           }*/
-          if (_formMode == FormMode.SIGNUP) {
+          //if (_formMode == FormMode.SIGNUP) {
             /*var newUser = {};
             var userName = {};
             var userLocation = {};
@@ -216,16 +154,20 @@ class _SignUpState extends State<SignUp> {
             newUser['location'] = userLocation;*/
             //store new user into database
             Name name = new Name(
-                firstName: firstName.toString(), lastName: lastName.toString());
+                firstName: _firstName, lastName: _lastName);
+
             ULocation ulocation = new ULocation(
                 latitude: _currentLocation['latitude'],
                 longitude: _currentLocation['longitude']);
-            User user = new User(
-                name: name, phone: phoneNumber.toString(), location: ulocation);
-            BaseDatabase userDatabase = new UserDatabase();
-            String status = await userDatabase.addNewUser(userId, user);
+
+            User user=new User(name: name,phone: _phoneNUmber,location: ulocation);
+            print(user);
+
+            UserDatabase userDatabase = new UserDatabase();
+            String status = await userDatabase.addNewUser(userId,user);
+            formKey.currentState.reset();
             print('Status: $status');
-          }
+
           setState(() {
             _isLoading = false;
           });
@@ -244,6 +186,66 @@ class _SignUpState extends State<SignUp> {
         }
       }
     }
+    bool isValidFirstName(String input) {
+      if (input.trim().isEmpty) return false;
+      return true;
+    }
+     var firstName = TextFormField(
+      keyboardType: TextInputType.text,
+      autofocus: false,
+      maxLines: 1,
+      decoration: InputDecoration(
+        hintText: "Enter first name",
+        labelText: "First Name",
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+      ),
+      inputFormatters: [new LengthLimitingTextInputFormatter(15)],
+      validator: (input) =>
+      isValidFirstName(input) ? null : "First name is required",
+      onSaved: (input) => _firstName = input,
+    );
+
+    bool isValidLasName(String input) {
+      if (input.trim().isEmpty) return false;
+      return true;
+    }
+    var lastName = TextFormField(
+      keyboardType: TextInputType.text,
+      autofocus: false,
+      maxLines: 1,
+      decoration: InputDecoration(
+        hintText: "Enter last name",
+        labelText: "Last Name",
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+      ),
+      inputFormatters: [new LengthLimitingTextInputFormatter(15)],
+      validator: (input) =>
+      isValidLasName(input) ? null : "Last name is required",
+      onSaved: (input) => _lastName = input,
+    );
+
+    bool isValidPhoneNumber(String input) {
+      final RegExp regex = new RegExp(r'^\d\d\d\d\d\d\d\d\d\d$');
+      //r'^\(\d\d\d\)\d\d\d\-\d\d\d\d$'
+      return regex.hasMatch(input);
+    }
+    var phoneNumber = TextFormField(
+      keyboardType: TextInputType.phone,
+      autofocus: false,
+      maxLines: 1,
+      decoration: InputDecoration(
+        hintText: "Enter mobile number",
+        labelText: "Mobile Number",
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+      ),
+      inputFormatters: [
+        new WhitelistingTextInputFormatter(new RegExp(r'^[()\d -]{1,15}$')),
+      ],
+      validator: (input) => isValidPhoneNumber(input)
+          ? null
+          : "Phone number must be entered as (###)###-####",
+      onSaved: (input) => _phoneNUmber = input,
+    );
 
     Widget _showPrimaryButton() {
       return new Padding(
@@ -276,7 +278,7 @@ class _SignUpState extends State<SignUp> {
     );
 
     var mapView = Container(
-      padding: EdgeInsets.all(10.0),
+      //padding: EdgeInsets.all(16.0),
       height: MediaQuery.of(context).size.height * .5,
       width: MediaQuery.of(context).size.width,
       decoration: BoxDecoration(
@@ -322,29 +324,24 @@ class _SignUpState extends State<SignUp> {
             SizedBox(
               height: 10.0,
             ),
+             _currentLocation == null
+                  ? CircularProgressIndicator()
+                  : mapView,
           ],
         ),
       ),
     );
 
     return Scaffold(
+      resizeToAvoidBottomPadding: false,
       appBar: AppBar(
         title: Text("Sign Up"),
       ),
       body: Stack(
-        /*crossAxisAlignment: CrossAxisAlignment.start,
+       /* crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,*/
         children: <Widget>[
           form,
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Expanded(
-              flex: 2,
-              child: _currentLocation == null
-                  ? CircularProgressIndicator()
-                  : mapView,
-            ),
-          ),
         ],
       ),
     );

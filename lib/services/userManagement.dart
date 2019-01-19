@@ -15,11 +15,15 @@ abstract class BaseDatabase{
 }
 class UserDatabase implements BaseDatabase{
   DatabaseReference databaseReference=FirebaseDatabase.instance.reference();
+  User user;
+  UserDatabase();
   @override
-  Future<String> addNewUser(String userId, User user) async{
-    var encodeUser = json.encode(user);
+  Future<String> addNewUser(String userId,User user) async{
+   /* this.user=user;
+    var encodeUser = jsonEncode(this.user);
+    print(encodeUser.toString());*/
     String newUserStatus="failure";
-    newUserStatus=await databaseReference.child('users').child(userId).set(encodeUser).then((v){
+    newUserStatus=await databaseReference.child('users').child(userId).set(user.toJson()).then((v){
       return "Success";
     });
     return newUserStatus;
@@ -32,8 +36,8 @@ class UserDatabase implements BaseDatabase{
   }
 
   @override
-  Future<List<User>> searchAllUser() {
-    // TODO: implement searchAllUser
+  Future<List<User>> searchAllUser(){
+    //databaseReference.child("users");
     return null;
   }
 

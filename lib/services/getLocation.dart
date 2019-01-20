@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:friend_tracker/services/authentication.dart';
 import 'package:friend_tracker/services/bloc/LocationBlocProvider.dart';
+import 'package:friend_tracker/services/currentDateTime.dart';
+import 'package:friend_tracker/services/userManagement.dart';
 import 'package:friend_tracker/views/map/map.dart';
 import 'package:friend_tracker/views/showAllUsers.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -30,6 +32,10 @@ class _GetLocationState extends State<GetLocation> {
   GoogleMapController mapController;
   Marker marker;
   //Location location;
+  var userLocation = {};
+  CurrentDateTime startDateTime=new CurrentDateTime();
+  String currentDateTime;
+  UserDatabase userDatabase = new UserDatabase();
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
@@ -43,6 +49,9 @@ class _GetLocationState extends State<GetLocation> {
     _locationSubscription=_location.onLocationChanged().listen((Map<String, double> result) async {
       setState(() {
         _currentLocation = result;
+        currentDateTime=startDateTime.currentDateTime();
+        userLocation['latitude'] = _currentLocation['latitude'];
+        userLocation['longitude'] = _currentLocation['longitude'];
       });
 
       if (marker != null) {
@@ -68,6 +77,9 @@ class _GetLocationState extends State<GetLocation> {
         ),
       );
     });
+    if(!mounted)
+      return;
+
   }
 
   @override
@@ -122,7 +134,13 @@ class _GetLocationState extends State<GetLocation> {
       try {
         await widget.auth.signOut();
         widget.onSignedOut();
-        //_locationSubscription.cancel();
+        _locationSubscription.cancel();
+        //last location
+        CurrentDateTime currentDateTime=new CurrentDateTime();
+        userLocation['latitude'] = _currentLocation['latitude'];
+        userLocation['longitude'] = _currentLocation['longitude'];
+        String status=await userDatabase.updateUserLocation(widget.userId, userLocation,currentDateTime.currentDateTime());
+        print("Sign out , location update $status");
       } catch (e) {
         print(e);
       }

@@ -4,13 +4,15 @@ class User {
   String key;
   final Name name;
   final ULocation location;
+  final String datetime;
   final String phone;
 
-  User({this.name, this.phone, this.location});
+  User({this.name, this.phone, this.location,this.datetime});
 
   factory User.fromJson(Map<String, dynamic> parsedJson) {
     return User(
       name: Name.fromJson(parsedJson['name']),
+      datetime: parsedJson['datetime'],
       phone: parsedJson['phone'],
       location: ULocation.fromJson(parsedJson['location']),
     );
@@ -19,12 +21,14 @@ class User {
   User.fromSnapshot(DataSnapshot snapshot)
       : key=snapshot.key,
         name = Name.fromSnapshot(snapshot),
+        datetime=snapshot.value['datetime'],
         phone = snapshot.value['phone'],
         location = ULocation.fromSnapshot(snapshot);
 
   Map<String, dynamic> toJson() => {
         'name': name.toJson(),
         'phone': phone,
+        'datetime':datetime,
         'location': location.toJSon(),
       };
 }

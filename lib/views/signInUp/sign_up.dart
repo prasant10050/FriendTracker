@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:friend_tracker/Model/User.dart';
 import 'package:friend_tracker/services/authentication.dart';
+import 'package:friend_tracker/services/currentDateTime.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:friend_tracker/services/userManagement.dart';
@@ -25,7 +26,7 @@ enum FormMode { LOGIN, SIGNUP }
 class _SignUpState extends State<SignUp> {
   final scaffoldKey = new GlobalKey<ScaffoldState>();
   final formKey = new GlobalKey<FormState>();
-  String _firstName, _lastName, _phoneNUmber;
+  String _firstName, _lastName, _phoneNUmber,_dateTime;
 
   FormMode _formMode = FormMode.SIGNUP;
   Location location;
@@ -40,9 +41,29 @@ class _SignUpState extends State<SignUp> {
   GoogleMapController mapController;
   Marker marker;
 
-
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
+    mapController.addMarker(
+      MarkerOptions(
+        position: LatLng(
+          _currentLocation["latitude"],
+          _currentLocation["longitude"],
+        ),
+        icon: BitmapDescriptor.defaultMarker,
+        visible: true,
+      ),
+    );
+    mapController.moveCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(
+            _currentLocation["latitude"],
+            _currentLocation["longitude"],
+          ),
+          zoom: 20.0,
+        ),
+      ),
+    );
   }
 
   @override
@@ -134,40 +155,23 @@ class _SignUpState extends State<SignUp> {
       if (_validateAndSave()) {
         String userId = widget.userId;
         try {
-          /*if (_formMode == FormMode.LOGIN) {
-            userId = await widget.auth.signIn(_email, _password);
-            print('Signed in: $userId');
-          }*/
-          //if (_formMode == FormMode.SIGNUP) {
-            /*var newUser = {};
-            var userName = {};
-            var userLocation = {};
-            //username
-            userName['firstname'] = firstName;
-            userName['lastname'] = lastName;
-            //userlocation
-            userLocation['latitude'] = _currentLocation['latitude'];
-            userLocation['longitude'] = _currentLocation['longitude'];
-            //new user data
-            newUser['phone'] = phoneNumber;
-            newUser['name'] = userName;
-            newUser['location'] = userLocation;*/
-            //store new user into database
-            Name name = new Name(
-                firstName: _firstName, lastName: _lastName);
 
-            ULocation ulocation = new ULocation(
-                latitude: _currentLocation['latitude'],
-                longitude: _currentLocation['longitude']);
+          Name name = new Name(firstName: _firstName, lastName: _lastName);
 
-            User user=new User(name: name,phone: _phoneNUmber,location: ulocation);
-            print(user);
+          ULocation ulocation = new ULocation(
+              latitude: _currentLocation['latitude'],
+              longitude: _currentLocation['longitude']);
 
-            UserDatabase userDatabase = new UserDatabase();
-            String status = await userDatabase.addNewUser(userId,user);
-            formKey.currentState.reset();
-            print('Status: $status');
+          CurrentDateTime currentDateTime=new CurrentDateTime();
+          _dateTime=currentDateTime.currentDateTime();
+          User user =
+              new User(name: name, phone: _phoneNUmber, location: ulocation,datetime:_dateTime );
+          print(user);
 
+          UserDatabase userDatabase = new UserDatabase();
+          String status = await userDatabase.addNewUser(userId, user);
+          formKey.currentState.reset();
+          print('Status: $status');
           setState(() {
             _isLoading = false;
           });
@@ -186,11 +190,13 @@ class _SignUpState extends State<SignUp> {
         }
       }
     }
+
     bool isValidFirstName(String input) {
       if (input.trim().isEmpty) return false;
       return true;
     }
-     var firstName = TextFormField(
+
+    var firstName = TextFormField(
       keyboardType: TextInputType.text,
       autofocus: false,
       maxLines: 1,
@@ -201,7 +207,7 @@ class _SignUpState extends State<SignUp> {
       ),
       inputFormatters: [new LengthLimitingTextInputFormatter(15)],
       validator: (input) =>
-      isValidFirstName(input) ? null : "First name is required",
+          isValidFirstName(input) ? null : "First name is required",
       onSaved: (input) => _firstName = input,
     );
 
@@ -209,6 +215,7 @@ class _SignUpState extends State<SignUp> {
       if (input.trim().isEmpty) return false;
       return true;
     }
+
     var lastName = TextFormField(
       keyboardType: TextInputType.text,
       autofocus: false,
@@ -220,7 +227,7 @@ class _SignUpState extends State<SignUp> {
       ),
       inputFormatters: [new LengthLimitingTextInputFormatter(15)],
       validator: (input) =>
-      isValidLasName(input) ? null : "Last name is required",
+          isValidLasName(input) ? null : "Last name is required",
       onSaved: (input) => _lastName = input,
     );
 
@@ -229,6 +236,7 @@ class _SignUpState extends State<SignUp> {
       //r'^\(\d\d\d\)\d\d\d\-\d\d\d\d$'
       return regex.hasMatch(input);
     }
+
     var phoneNumber = TextFormField(
       keyboardType: TextInputType.phone,
       autofocus: false,
@@ -324,9 +332,7 @@ class _SignUpState extends State<SignUp> {
             SizedBox(
               height: 10.0,
             ),
-             _currentLocation == null
-                  ? CircularProgressIndicator()
-                  : mapView,
+            _currentLocation == null ? CircularProgressIndicator() : mapView,
           ],
         ),
       ),
@@ -338,7 +344,7 @@ class _SignUpState extends State<SignUp> {
         title: Text("Sign Up"),
       ),
       body: Stack(
-       /* crossAxisAlignment: CrossAxisAlignment.start,
+        /* crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,*/
         children: <Widget>[
           form,

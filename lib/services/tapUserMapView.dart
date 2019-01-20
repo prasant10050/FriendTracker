@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:friend_tracker/Model/User.dart';
+import 'package:friend_tracker/services/authentication.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class TapUserMapView extends StatefulWidget {
-  final double latitude;
-  final double longitude;
+  final User user;
 
-  TapUserMapView({this.latitude, this.longitude});
+
+  TapUserMapView({this.user});
 
   @override
   _TapUserMapViewState createState() => _TapUserMapViewState();
@@ -14,20 +16,24 @@ class TapUserMapView extends StatefulWidget {
 class _TapUserMapViewState extends State<TapUserMapView> {
   GoogleMapController mapController;
   Marker marker;
+  String email;
+  BaseAuth auth=new Auth();
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
     mapController.addMarker(MarkerOptions(
-      position: LatLng(widget.latitude, widget.longitude),
+      position: LatLng(widget.user.location.latitude,
+        widget.user.location.longitude,),
       icon: BitmapDescriptor.defaultMarker,
       visible: true,
+      infoWindowText: InfoWindowText("${widget.user.name.firstName} ${widget.user.name.lastName}", "$email Last update time ${widget.user.datetime}")
     ));
-    mapController.moveCamera(
+    mapController?.moveCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           target: LatLng(
-            widget.latitude,
-            widget.longitude,
+            widget.user.location.latitude,
+            widget.user.location.longitude,
           ),
           zoom: 20.0,
         ),
@@ -39,6 +45,13 @@ class _TapUserMapViewState extends State<TapUserMapView> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    auth.getCurrentUser().then((user) {
+      setState(() {
+        if (user != null) {
+          email = user?.email;
+        }
+      });
+    });
   }
 
   @override
@@ -54,8 +67,8 @@ class _TapUserMapViewState extends State<TapUserMapView> {
             options: GoogleMapOptions(
               cameraPosition: CameraPosition(
                   target: LatLng(
-                    widget.latitude,
-                    widget.longitude,
+                    widget.user.location.latitude,
+                    widget.user.location.longitude,
                   ),
                   zoom: 20.0,
               ),
@@ -96,7 +109,7 @@ class _TapUserMapViewState extends State<TapUserMapView> {
         appBar: AppBar(
           title: Text("User Location"),
         ),
-        body: (widget.longitude == null || widget.latitude == null)
+        body: (widget.user.location.latitude == null || widget.user.location.longitude == null)
             ? CircularProgressIndicator()
             : mapView,
         resizeToAvoidBottomPadding: false,

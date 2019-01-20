@@ -66,7 +66,7 @@ class _ShowAllUsersState extends State<ShowAllUsers> {
                       onTap: (){
                         Navigator.push(
                           context, MaterialPageRoute(builder: (BuildContext context)
-                        =>new TapUserMapView(latitude: users[index].location.latitude,longitude: users[index].location.longitude),
+                        =>new TapUserMapView(user: users[index],),
                         ),
                         );
                       },

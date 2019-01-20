@@ -11,7 +11,7 @@ abstract class BaseDatabase{
   Future<String> updateUser(String userId,User user);
   Future<List<User>> searchAllUser();
   Future<User> searchUser(String userId);
-  Future<Map<String,double>> updateUserLocation(String userId,Map<String,double> location);
+  Future<String> updateUserLocation(String userId,Map<String,double> ulocation,String datetime);
 }
 class UserDatabase implements BaseDatabase{
   DatabaseReference databaseReference=FirebaseDatabase.instance.reference();
@@ -54,7 +54,13 @@ class UserDatabase implements BaseDatabase{
   }
 
   @override
-  Future<Map<String, double>> updateUserLocation(String userId, Map location) {
+  Future<String> updateUserLocation(String userId, Map ulocation,String datetime) async{
+    String newUserStatus="failure";
+    newUserStatus=await databaseReference.child('users').child(userId).child("location").set(ulocation).then((v){
+      databaseReference.child('users').child('datetime').set(datetime);
+      return "Success";
+    });
+    return newUserStatus;
     // TODO: implement updateUserLocation
     return null;
   }

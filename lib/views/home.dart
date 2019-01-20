@@ -1,7 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:friend_tracker/services/authentication.dart';
 import 'package:friend_tracker/services/getLocation.dart';
+import 'package:friend_tracker/util/loaders/color_loader_3.dart';
 import 'package:friend_tracker/views/signInUp/sign_in.dart';
+
 class HomePage extends StatefulWidget {
   final BaseAuth auth;
 
@@ -19,32 +22,38 @@ enum AuthStatus {
 
 class _HomePageState extends State<HomePage> {
   BaseAuth auth;
-  AuthStatus authStatus=AuthStatus.NOT_DETERMINED;
-  String _userId="";
+  AuthStatus authStatus = AuthStatus.NOT_DETERMINED;
+  String _userId = "";
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    widget.auth.getCurrentUser().then((user){
+    widget.auth.getCurrentUser().then((user) {
       setState(() {
-        if(user!=null){
-          _userId=user?.uid;
+        if (user != null) {
+          _userId = user?.uid;
         }
-        authStatus=user?.uid==null?AuthStatus.NOT_LOGGED_IN:AuthStatus.LOGGED_IN;
+        authStatus =
+            user?.uid == null ? AuthStatus.NOT_LOGGED_IN : AuthStatus.LOGGED_IN;
       });
+    });
+    FirebaseAuth.instance.onAuthStateChanged.listen(_handleUser);
+  }
+  void _handleUser(FirebaseUser event) {
+    setState(() {
+      
     });
   }
 
   void _onLoggedIn() {
-    widget.auth.getCurrentUser().then((user){
+    widget.auth.getCurrentUser().then((user) {
       setState(() {
         _userId = user.uid.toString();
       });
     });
     setState(() {
       authStatus = AuthStatus.LOGGED_IN;
-
     });
   }
 
@@ -64,7 +73,30 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
+  Widget _handleCurrentScreen() {
+    return new StreamBuilder<FirebaseUser>(
+        stream: FirebaseAuth.instance.onAuthStateChanged,
+        builder: (BuildContext context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return new ColorLoader3(
+              radius: 15.0,
+              dotRadius: 6.0,
+            );
+          } else {
+            if (snapshot.hasData) {
+              return new GetLocation(
+                userId: _userId,
+                auth: widget.auth,
+                onSignedOut: _onSignedOut,
+              );
+            }
+            return new SignIn(
+              auth: widget.auth,
+              onSignedIn: _onLoggedIn,
+            );
+          }
+        });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,4 +123,5 @@ class _HomePageState extends State<HomePage> {
         return _buildWaitingScreen();
     }
   }
+
 }

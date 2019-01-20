@@ -6,6 +6,7 @@ import 'package:friend_tracker/services/bloc/LocationBlocProvider.dart';
 import 'package:friend_tracker/services/bloc/userBloc.dart';
 import 'package:friend_tracker/services/bloc/userBlocProvider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:friend_tracker/services/tapUserMapView.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 class ShowAllUsers extends StatefulWidget {
   @override
@@ -62,6 +63,13 @@ class _ShowAllUsersState extends State<ShowAllUsers> {
                       ),
                       title: Text("Contact - ${users[index].phone}"),
                       subtitle: Text("Location - latitude ${users[index].location.latitude}, longitude ${users[index].location.longitude}"),
+                      onTap: (){
+                        Navigator.push(
+                          context, MaterialPageRoute(builder: (BuildContext context)
+                        =>new TapUserMapView(latitude: users[index].location.latitude,longitude: users[index].location.longitude),
+                        ),
+                        );
+                      },
                     ),
                   ],
                 ),

@@ -49,10 +49,10 @@ class _GetLocationState extends State<GetLocation> {
     _locationSubscription=_location.onLocationChanged().listen((Map<String, double> result) async {
       setState(() {
         _currentLocation = result;
-        currentDateTime=startDateTime.currentDateTime();
-        userLocation['latitude'] = _currentLocation['latitude'];
-        userLocation['longitude'] = _currentLocation['longitude'];
       });
+      currentDateTime=startDateTime.currentDateTime();
+      userLocation['latitude'] = _currentLocation['latitude'];
+      userLocation['longitude'] = _currentLocation['longitude'];
 
       if (marker != null) {
         mapController.removeMarker(marker);
@@ -76,6 +76,10 @@ class _GetLocationState extends State<GetLocation> {
           ),
         ),
       );
+
+      String status=await userDatabase.updateUserLocation(widget.userId, userLocation,currentDateTime);
+      print("InitiState, location update $status");
+      print("$status $userLocation");
     });
     if(!mounted)
       return;

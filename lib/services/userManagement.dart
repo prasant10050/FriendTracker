@@ -57,7 +57,7 @@ class UserDatabase implements BaseDatabase{
   Future<String> updateUserLocation(String userId, Map ulocation,String datetime) async{
     String newUserStatus="failure";
     newUserStatus=await databaseReference.child('users').child(userId).child("location").set(ulocation).then((v){
-      databaseReference.child('users').child('datetime').set(datetime);
+      databaseReference.child('users').child(userId).child("datetime").set(datetime);
       return "Success";
     });
     return newUserStatus;

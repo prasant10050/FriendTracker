@@ -28,7 +28,7 @@ class _TapUserMapViewState extends State<TapUserMapView> {
       visible: true,
       infoWindowText: InfoWindowText("${widget.user.name.firstName} ${widget.user.name.lastName}", "$email Last update time ${widget.user.datetime}")
     ));
-    mapController?.moveCamera(
+    mapController.moveCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           target: LatLng(

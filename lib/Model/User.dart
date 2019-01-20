@@ -17,9 +17,10 @@ class User {
   }
 
   User.fromSnapshot(DataSnapshot snapshot)
-      : name = Name.fromSnapshot(snapshot.value['name']),
+      : key=snapshot.key,
+        name = Name.fromSnapshot(snapshot),
         phone = snapshot.value['phone'],
-        location = ULocation.fromSnapshot(snapshot.value['location']);
+        location = ULocation.fromSnapshot(snapshot);
 
   Map<String, dynamic> toJson() => {
         'name': name.toJson(),
@@ -42,8 +43,8 @@ class Name {
   }
 
   Name.fromSnapshot(DataSnapshot snapshot)
-      : firstName = snapshot.value['firstname'],
-        lastName = snapshot.value['lastname'];
+      : firstName = snapshot.value['name']['firstname'],
+        lastName = snapshot.value['name']['lastname'];
 
   Map<String, dynamic> toJson() => {
         'firstname': firstName,
@@ -65,8 +66,8 @@ class ULocation {
   }
 
   ULocation.fromSnapshot(DataSnapshot snapshot)
-      : latitude = snapshot.value['snapshot'],
-        longitude = snapshot.value['longitude'];
+      : latitude = snapshot.value['location']['latitude'],
+        longitude = snapshot.value['location']['longitude'];
 
   Map<String, dynamic> toJSon() => {
         'latitude': latitude,

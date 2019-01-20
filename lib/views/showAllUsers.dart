@@ -1,5 +1,7 @@
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_database/ui/firebase_animated_list.dart';
 import 'package:flutter/material.dart';
+import 'package:friend_tracker/Model/User.dart';
 import 'package:friend_tracker/services/bloc/LocationBlocProvider.dart';
 import 'package:friend_tracker/services/bloc/userBloc.dart';
 import 'package:friend_tracker/services/bloc/userBlocProvider.dart';
@@ -11,97 +13,61 @@ class ShowAllUsers extends StatefulWidget {
 }
 
 class _ShowAllUsersState extends State<ShowAllUsers> {
-  GoogleMapController mapController;
-  Marker marker;
-  void _onMapCreated(GoogleMapController controller) {
-    mapController = controller;
-  }
-  /*var locationBloc;
-  var userBloc;
-  @override void didChangeDependencies() {
-    super.didChangeDependencies();
-    locationBloc = LocationBlocProvider.of(context);
-    userBloc=UserBlocProvider.of(context);
-  }
+  List<User> users=List();
+  User user;
+  DatabaseReference userRef;
+
   @override
   void initState() {
+    // TODO: implement initState
     super.initState();
+    user=new User(name: null,phone: "",location: null);
+    userRef=FirebaseDatabase.instance.reference().child("users");
+    userRef.onChildAdded.listen(_onEntryAdded);
+    userRef.onChildChanged.listen(_onEntryChanged);
+  }
 
-  }*/
+  void _onEntryAdded(Event event) {
+    setState(() {
+      users.add(User.fromSnapshot(event.snapshot));
+    });
+  }
+
+  void _onEntryChanged(Event event) {
+    var old=users.singleWhere((entry){
+      return entry.key==event.snapshot.key;
+    });
+    setState(() {
+      users[users.indexOf(old)]=User.fromSnapshot(event.snapshot);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
 
-    /*Widget _backgroundMapView(){
-      return StreamBuilder(
-          stream: locationBloc.outLocation,
-          builder: (context, snapshot) {
-            if(!snapshot.hasData){
-              return Center(
-                child: CircularProgressIndicator(),
-              );
-            }else if(snapshot.hasError){
-              return Center(child: Text("Error"),);
-            }else{
-              return Container(
-                //height: MediaQuery.of(context).size.height,
-                //width: MediaQuery.of(context).size.width,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: GoogleMap(
-                    onMapCreated: _onMapCreated,
-                    options: GoogleMapOptions(
-                      cameraPosition: CameraPosition(
-                          target: LatLng(snapshot.data[0]['latitude'], snapshot.data[0]['longitude'],),
-                          zoom: 20.0),
-                      mapType: MapType.normal,
-                    ),
-                  ),
-                ),
-              );
-            }
-          }
-      );
-    }*/
-    Widget _listViewBuilder(Map<String,Map> document) {
-      return Text(document.values.toString());
-
-      /*return ListView.builder(
-        itemCount: document.length,
-        itemBuilder: (context, index) {
+    Widget _userStream(){
+      return FirebaseAnimatedList(
+        query: userRef,
+        itemBuilder:(BuildContext context,DataSnapshot snapshot,Animation<double> animation,int index){
           return new Card(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 ExpansionTile(
-                  title: Text("UserName"),
+                  title: Text("${users[index].name.firstName} ${users[index].name.lastName}"),
                   children: <Widget>[
                     ListTile(
-                      title: Text(document.values.toString()),
-                      //subtitle: Text(document.data.snapshot.value[index].toString()),
-                      *//*leading: CircleAvatar(
-                        child: Text(document.values.toString()),
-                      ),*//*
+                      leading: CircleAvatar(
+                        child: Text("${users[index].name.firstName[0]}"),
+                      ),
+                      title: Text("Contact - ${users[index].phone}"),
+                      subtitle: Text("Location - latitude ${users[index].location.latitude}, longitude ${users[index].location.longitude}"),
                     ),
                   ],
                 ),
               ],
             ),
           );
-        },
-      );*/
-    }
-
-    Widget _userStream(){
-      return StreamBuilder<Event>(
-        stream: FirebaseDatabase.instance.reference().child('users').onValue,
-        builder: (context,AsyncSnapshot<Event>snapshot){
-          if (snapshot.hasError) return new Text('${snapshot.error}');
-          switch (snapshot.connectionState) {
-            case ConnectionState.waiting:
-              return new Center(child: new CircularProgressIndicator());
-            default:
-              return _listViewBuilder(snapshot.data.snapshot.value);
-          }
         },
       );
     }
@@ -121,7 +87,7 @@ class _ShowAllUsersState extends State<ShowAllUsers> {
                   pinned: true,
                   flexibleSpace: FlexibleSpaceBar(
                       centerTitle: true,
-                      title: Text("Collapsing Toolbar",
+                      title: Text("Friend Tracker",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16.0,
@@ -154,6 +120,8 @@ class _ShowAllUsersState extends State<ShowAllUsers> {
         ),
     );
   }
+
+
 }
 
 

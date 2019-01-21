@@ -16,7 +16,11 @@ abstract class BaseDatabase{
 class UserDatabase implements BaseDatabase{
   DatabaseReference databaseReference=FirebaseDatabase.instance.reference();
   User user;
-  UserDatabase();
+  UserDatabase(){
+    databaseReference.keepSynced(true);
+    FirebaseDatabase.instance.setPersistenceCacheSizeBytes(10000000);
+    FirebaseDatabase.instance.setPersistenceEnabled(true);
+  }
   @override
   Future<String> addNewUser(String userId,User user) async{
    /* this.user=user;
@@ -28,6 +32,7 @@ class UserDatabase implements BaseDatabase{
     });
     return newUserStatus;
   }
+
 
   @override
   Future<String> deleteUser(String userId) {

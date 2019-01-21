@@ -24,8 +24,8 @@ dependencies:
   cloud_firestore: ^0.8.2+3
   firebase_database: ^1.0.5
   connectivity: ^0.3.2
-  location: ^1.4.1
-  google_maps_flutter: ^0.0.3+3
+  location:
+  google_maps_flutter:
   font_awesome_flutter: ^8.2.0
   rxdart:
   intl:

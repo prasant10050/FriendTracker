@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:friend_tracker/Model/User.dart';
 import 'package:friend_tracker/services/authentication.dart';
 import 'package:friend_tracker/services/currentDateTime.dart';
+import 'package:friend_tracker/services/getLocation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:friend_tracker/services/userManagement.dart';
@@ -22,6 +23,11 @@ class SignUp extends StatefulWidget {
 }
 
 enum FormMode { LOGIN, SIGNUP }
+enum AuthStatus {
+  NOT_DETERMINED,
+  NOT_LOGGED_IN,
+  LOGGED_IN,
+}
 
 class _SignUpState extends State<SignUp> {
   final scaffoldKey = new GlobalKey<ScaffoldState>();
@@ -29,7 +35,7 @@ class _SignUpState extends State<SignUp> {
   String _firstName, _lastName, _phoneNUmber,_dateTime;
 
   FormMode _formMode = FormMode.SIGNUP;
-  Location location;
+  Location location=new Location();
   bool _isIos;
   bool _isLoading;
   String _errorMessage;
@@ -71,10 +77,10 @@ class _SignUpState extends State<SignUp> {
     location = new Location();
     initPlatformState();
     super.initState();
-    _locationSubscription =
-        location.onLocationChanged().listen((Map<String, double> result) async {
+    location.onLocationChanged().listen((Map<String, double> result) async {
       setState(() {
         _currentLocation = result;
+        print("$_currentLocation");
       });
 
       if (marker != null) {
@@ -102,37 +108,66 @@ class _SignUpState extends State<SignUp> {
         ),
       );
     });
+    if(!mounted)
+      return;
   }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _locationSubscription.cancel();
-  }
-
   initPlatformState() async {
     Map<String, double> _location;
     try {
       _permission = await location.hasPermission();
       _location = await location.getLocation();
+      /*location.onLocationChanged().listen((result){
+        setState(() {
+          _currentLocation=result;
+          print("$_currentLocation");
+        });
+      });*/
       error = null;
     } on PlatformException catch (e) {
       if (e.code == 'PERMISSION_DENIED') {
         error = 'Permission denied';
       } else if (e.code == 'PERMISSION_DENIED_NEVER_ASK') {
         error =
-            'Permission denied - please ask the user to enable it from the app settings';
+        'Permission denied - please ask the user to enable it from the app settings';
       }
       _location = null;
     }
     if (!mounted) return;
     setState(() {
       _startLocation = _location;
+      print("$_startLocation");
     });
   }
+  @override
+  void dispose() {
+    _locationSubscription.cancel();
+    super.dispose();
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
+    var mapView = Container(
+      //padding: EdgeInsets.all(16.0),
+      height: MediaQuery.of(context).size.height * .5,
+      width: MediaQuery.of(context).size.width,
+      decoration: BoxDecoration(
+        //border: Border.all(width: 3.0),
+        borderRadius: BorderRadius.circular(4.0),
+      ),
+      child: GoogleMap(
+        onMapCreated: _onMapCreated,
+        options: GoogleMapOptions(
+          cameraPosition: CameraPosition(
+              target:
+                  LatLng(_currentLocation["latitude"], _currentLocation["longitude"],),
+              zoom: 20.0),
+          mapType: MapType.normal,
+        ),
+      ),
+    );
+
     bool _validateAndSave() {
       final form = formKey.currentState;
       if (form.validate()) {
@@ -172,6 +207,11 @@ class _SignUpState extends State<SignUp> {
           String status = await userDatabase.addNewUser(userId, user);
           formKey.currentState.reset();
           print('Status: $status');
+          if(status=="Success"){
+            Navigator.push(context, MaterialPageRoute(builder: (BuildContext context){
+              return new GetLocation(userId: widget.userId,);
+            }));
+          }
           setState(() {
             _isLoading = false;
           });
@@ -190,6 +230,8 @@ class _SignUpState extends State<SignUp> {
         }
       }
     }
+
+
 
     bool isValidFirstName(String input) {
       if (input.trim().isEmpty) return false;
@@ -285,26 +327,6 @@ class _SignUpState extends State<SignUp> {
       ),
     );
 
-    var mapView = Container(
-      //padding: EdgeInsets.all(16.0),
-      height: MediaQuery.of(context).size.height * .5,
-      width: MediaQuery.of(context).size.width,
-      decoration: BoxDecoration(
-        //border: Border.all(width: 3.0),
-        borderRadius: BorderRadius.circular(4.0),
-      ),
-      child: GoogleMap(
-        onMapCreated: _onMapCreated,
-        options: GoogleMapOptions(
-          cameraPosition: CameraPosition(
-              target: LatLng(
-                  _currentLocation["latitude"], _currentLocation["longitude"]),
-              zoom: 20.0),
-          mapType: MapType.normal,
-        ),
-      ),
-    );
-
     var form = Container(
       padding: EdgeInsets.all(16.0),
       child: Form(
@@ -332,7 +354,7 @@ class _SignUpState extends State<SignUp> {
             SizedBox(
               height: 10.0,
             ),
-            _currentLocation == null ? CircularProgressIndicator() : mapView,
+            //_currentLocation == null ? CircularProgressIndicator() : mapView,
           ],
         ),
       ),

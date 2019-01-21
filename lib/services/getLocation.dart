@@ -6,15 +6,16 @@ import 'package:friend_tracker/services/authentication.dart';
 import 'package:friend_tracker/services/bloc/LocationBlocProvider.dart';
 import 'package:friend_tracker/services/currentDateTime.dart';
 import 'package:friend_tracker/services/userManagement.dart';
+import 'package:friend_tracker/views/home.dart';
 import 'package:friend_tracker/views/map/map.dart';
 import 'package:friend_tracker/views/showAllUsers.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 
 class GetLocation extends StatefulWidget {
-  final String userId;
-  final BaseAuth auth;
-  final VoidCallback onSignedOut;
+  String userId;
+  BaseAuth auth;
+  VoidCallback onSignedOut;
 
   GetLocation({this.userId, this.auth, this.onSignedOut});
 
@@ -44,8 +45,9 @@ class _GetLocationState extends State<GetLocation> {
   @override
   void initState() {
     /*_location = new Location();*/
-    initPlatformState();
+
     super.initState();
+    initPlatformState();
     _locationSubscription=_location.onLocationChanged().listen((Map<String, double> result) async {
       setState(() {
         _currentLocation = result;
@@ -125,7 +127,7 @@ class _GetLocationState extends State<GetLocation> {
             onMapCreated: _onMapCreated,
             options: GoogleMapOptions(
               cameraPosition: CameraPosition(
-                  target: LatLng(_currentLocation["latitude"], _currentLocation["longitude"],),
+                  target: LatLng(_currentLocation["latitude"]??null, _currentLocation["longitude"]??null,),
                   zoom: 20.0),
               mapType: MapType.normal,
             ),
@@ -136,9 +138,15 @@ class _GetLocationState extends State<GetLocation> {
 
     _signOut() async {
       try {
+        if(widget.auth==null || widget.userId==null){
+          HomePage homePage=new HomePage();
+          homePage.auth.signOut();
+          //homePage.createState().authStatus=AuthStatus.NOT_LOGGED_IN;
+          homePage.createState().onSignedOut();
+        }
         await widget.auth.signOut();
         widget.onSignedOut();
-        _locationSubscription.cancel();
+        //_locationSubscription.cancel();
         //last location
         CurrentDateTime currentDateTime=new CurrentDateTime();
         userLocation['latitude'] = _currentLocation['latitude'];
@@ -157,14 +165,16 @@ class _GetLocationState extends State<GetLocation> {
           new IconButton(
               icon: Icon(
                 Icons.power_settings_new,
-                size: 25.0,
+                size: 30.0,
               ),
+              tooltip: "Logout",
               onPressed: _signOut),
           new IconButton(
-              icon: Icon(FontAwesomeIcons.users),
+              icon: Icon(FontAwesomeIcons.users,size: 30.0,),
               onPressed: (){
                 Navigator.push(context, MaterialPageRoute(builder: (BuildContext context)=>new ShowAllUsers(),),);
               },
+            tooltip: "Show All Users",
           ),
         ],
       ),

@@ -10,6 +10,7 @@ abstract class BaseAuth{
 class Auth implements BaseAuth{
   final FirebaseAuth _firebaseAuth=FirebaseAuth.instance;
 
+
   Future<String> signIn(String email,String password) async{
     FirebaseUser user=await _firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
     return user.uid;
@@ -22,6 +23,7 @@ class Auth implements BaseAuth{
 
   Future<FirebaseUser> getCurrentUser() async{
     FirebaseUser user=await _firebaseAuth.currentUser();
+    print("user $user");
     return user;
   }
 

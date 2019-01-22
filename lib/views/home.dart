@@ -37,7 +37,7 @@ class _HomePageState extends State<HomePage> {
             user?.uid == null ? AuthStatus.NOT_LOGGED_IN : AuthStatus.LOGGED_IN;
       });
     });
-    FirebaseAuth.instance.onAuthStateChanged.listen(_handleUser);
+    //FirebaseAuth.instance.onAuthStateChanged.listen(_handleUser);
   }
   void _handleUser(FirebaseUser event) {
     setState(() {

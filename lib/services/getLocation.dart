@@ -9,6 +9,7 @@ import 'package:friend_tracker/services/userManagement.dart';
 import 'package:friend_tracker/views/home.dart';
 import 'package:friend_tracker/views/map/map.dart';
 import 'package:friend_tracker/views/showAllUsers.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 
@@ -37,6 +38,10 @@ class _GetLocationState extends State<GetLocation> {
   CurrentDateTime startDateTime=new CurrentDateTime();
   String currentDateTime;
   UserDatabase userDatabase = new UserDatabase();
+
+  //Getlocator
+  StreamSubscription<Position> _positionStreamSubscription;
+  final List<Position> _positions = <Position>[];
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
@@ -127,7 +132,7 @@ class _GetLocationState extends State<GetLocation> {
             onMapCreated: _onMapCreated,
             options: GoogleMapOptions(
               cameraPosition: CameraPosition(
-                  target: LatLng(_currentLocation["latitude"]??null, _currentLocation["longitude"]??null,),
+                  target: LatLng(_currentLocation["latitude"], _currentLocation["longitude"],),
                   zoom: 20.0),
               mapType: MapType.normal,
             ),

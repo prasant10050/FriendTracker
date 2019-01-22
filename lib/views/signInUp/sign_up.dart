@@ -7,6 +7,10 @@ import 'package:friend_tracker/Model/User.dart';
 import 'package:friend_tracker/services/authentication.dart';
 import 'package:friend_tracker/services/currentDateTime.dart';
 import 'package:friend_tracker/services/getLocation.dart';
+import 'package:friend_tracker/services/location/current_location.dart';
+import 'package:friend_tracker/util/loaders/color_loader_2.dart';
+import 'package:friend_tracker/util/loaders/color_loader_3.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:friend_tracker/services/userManagement.dart';
@@ -32,10 +36,10 @@ enum AuthStatus {
 class _SignUpState extends State<SignUp> {
   final scaffoldKey = new GlobalKey<ScaffoldState>();
   final formKey = new GlobalKey<FormState>();
-  String _firstName, _lastName, _phoneNUmber,_dateTime;
+  String _firstName, _lastName, _phoneNUmber, _dateTime;
 
   FormMode _formMode = FormMode.SIGNUP;
-  Location location=new Location();
+  Location location = new Location();
   bool _isIos;
   bool _isLoading;
   String _errorMessage;
@@ -43,17 +47,21 @@ class _SignUpState extends State<SignUp> {
   String error;
   Map<String, double> _startLocation;
   Map<String, double> _currentLocation;
-  StreamSubscription<Map<String, double>> _locationSubscription;
+
+  //StreamSubscription<Map<String, double>> _locationSubscription;
   GoogleMapController mapController;
   Marker marker;
+  Position position;
+  CurrentLocation currentLocation = new CurrentLocation();
+  String geoLocationStatus;
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
     mapController.addMarker(
       MarkerOptions(
         position: LatLng(
-          _currentLocation["latitude"],
-          _currentLocation["longitude"],
+          position.latitude,
+          position.longitude,
         ),
         icon: BitmapDescriptor.defaultMarker,
         visible: true,
@@ -63,8 +71,8 @@ class _SignUpState extends State<SignUp> {
       CameraUpdate.newCameraPosition(
         CameraPosition(
           target: LatLng(
-            _currentLocation["latitude"],
-            _currentLocation["longitude"],
+            position.latitude,
+            position.longitude,
           ),
           zoom: 20.0,
         ),
@@ -74,18 +82,37 @@ class _SignUpState extends State<SignUp> {
 
   @override
   void initState() {
-    location = new Location();
-    initPlatformState();
     super.initState();
-    location.onLocationChanged().listen((Map<String, double> result) async {
+    _initPlatformState();
+    /*currentLocation.geoLocationStatus().then((v){
+      if(v==GeolocationStatus.disabled) {
+        setState(() {
+          geoLocationStatus =
+          "Location services disabled,Enable location services for this App using the device settings.";
+        });
+      }
+      else if(v==GeolocationStatus.denied) {
+        setState(() {
+          geoLocationStatus =
+          "Allow access to the location services for this App using the device settings.";
+        });
+      }
+      else if(v==GeolocationStatus.granted){
+
+      }
+    });*/
+
+    //location = new Location();
+    //initPlatformState();
+    /*location.onLocationChanged().listen((Map<String, double> result) async {
       setState(() {
         _currentLocation = result;
         print("$_currentLocation");
       });
 
-      if (marker != null) {
+      */ /*if (marker != null) {
         mapController.removeMarker(marker);
-      }
+      }*/ /*
       marker = await mapController?.addMarker(
         MarkerOptions(
           position: LatLng(
@@ -94,9 +121,9 @@ class _SignUpState extends State<SignUp> {
           ),
           icon: BitmapDescriptor.defaultMarker,
           visible: true,
-        ),
+        );
       );
-      await mapController?.moveCamera(
+      */ /*await*/ /* mapController?.moveCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
             target: LatLng(
@@ -107,21 +134,43 @@ class _SignUpState extends State<SignUp> {
           ),
         ),
       );
-    });
-    if(!mounted)
-      return;
+    });*/
+    //if (!mounted) return;
   }
-  initPlatformState() async {
+  Future<void> _initPlatformState() async {
+    Position _position;
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      final Geolocator geolocator = Geolocator()
+        ..forceAndroidLocationManager = true;
+      position = await geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.bestForNavigation);
+    } on PlatformException {
+      position = null;
+    }
+
+    // If the widget was removed from the tree while the asynchronous platform
+    // message was in flight, we want to discard the reply rather than calling
+    // setState to update our non-existent appearance.
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      position = _position;
+    });
+  }
+  /*initPlatformState() async {
     Map<String, double> _location;
     try {
       _permission = await location.hasPermission();
       _location = await location.getLocation();
-      /*location.onLocationChanged().listen((result){
+      */ /*location.onLocationChanged().listen((result){
         setState(() {
           _currentLocation=result;
           print("$_currentLocation");
         });
-      });*/
+      });*/ /*
       error = null;
     } on PlatformException catch (e) {
       if (e.code == 'PERMISSION_DENIED') {
@@ -137,35 +186,65 @@ class _SignUpState extends State<SignUp> {
       _startLocation = _location;
       print("$_startLocation");
     });
-  }
+  }*/
+
   @override
   void dispose() {
-    _locationSubscription.cancel();
+    //_locationSubscription.cancel();
     super.dispose();
   }
 
-
-
   @override
   Widget build(BuildContext context) {
+    showMessage(String message, [MaterialColor color = Colors.red]) {
+      scaffoldKey.currentState.showSnackBar(
+          new SnackBar(backgroundColor: color, content: new Text(message)));
+    }
+
     var mapView = Container(
-      //padding: EdgeInsets.all(16.0),
       height: MediaQuery.of(context).size.height * .5,
       width: MediaQuery.of(context).size.width,
       decoration: BoxDecoration(
         //border: Border.all(width: 3.0),
         borderRadius: BorderRadius.circular(4.0),
       ),
-      child: GoogleMap(
-        onMapCreated: _onMapCreated,
-        options: GoogleMapOptions(
-          cameraPosition: CameraPosition(
-              target:
-                  LatLng(_currentLocation["latitude"], _currentLocation["longitude"],),
-              zoom: 20.0),
-          mapType: MapType.normal,
-        ),
-      ),
+      child: FutureBuilder<GeolocationStatus>(
+          future: Geolocator().checkGeolocationPermissionStatus(),
+          builder: (BuildContext context,
+              AsyncSnapshot<GeolocationStatus> snapshot) {
+            if (!snapshot.hasData) {
+              return Center(
+                child: ColorLoader2(
+                  color1: Colors.redAccent,
+                  color2: Colors.green,
+                  color3: Colors.amber,
+                ),
+              );
+            }
+
+            if (snapshot.data == GeolocationStatus.disabled) {
+              return showMessage(
+                  'Location services disabled, Enable location services for this App using the device settings.');
+            }
+
+            if (snapshot.data == GeolocationStatus.denied) {
+              return showMessage(
+                  'Access to location denied, Allow access to the location services for this App using the device settings.');
+            }
+
+            return GoogleMap(
+              onMapCreated: _onMapCreated,
+              options: GoogleMapOptions(
+                cameraPosition: CameraPosition(
+                    target: LatLng(
+                      position.latitude,
+                      position.longitude,
+                    ),
+                    zoom: 20.0),
+                mapType: MapType.normal,
+              ),
+            );
+          }),
     );
 
     bool _validateAndSave() {
@@ -177,11 +256,6 @@ class _SignUpState extends State<SignUp> {
       return false;
     }
 
-    void showMessage(String message, [MaterialColor color = Colors.red]) {
-      scaffoldKey.currentState.showSnackBar(
-          new SnackBar(backgroundColor: color, content: new Text(message)));
-    }
-
     _validateAndSubmit() async {
       setState(() {
         _errorMessage = "";
@@ -190,28 +264,30 @@ class _SignUpState extends State<SignUp> {
       if (_validateAndSave()) {
         String userId = widget.userId;
         try {
-
           Name name = new Name(firstName: _firstName, lastName: _lastName);
 
           ULocation ulocation = new ULocation(
-              latitude: _currentLocation['latitude'],
-              longitude: _currentLocation['longitude']);
+              latitude: position.latitude, longitude: position.longitude);
 
-          CurrentDateTime currentDateTime=new CurrentDateTime();
-          _dateTime=currentDateTime.currentDateTime();
-          User user =
-              new User(name: name, phone: _phoneNUmber, location: ulocation,datetime:_dateTime );
+          CurrentDateTime currentDateTime = new CurrentDateTime();
+          _dateTime = currentDateTime.currentDateTime();
+          User user = new User(
+              name: name,
+              phone: _phoneNUmber,
+              location: ulocation,
+              datetime: _dateTime);
           print(user);
 
           UserDatabase userDatabase = new UserDatabase();
           String status = await userDatabase.addNewUser(userId, user);
           formKey.currentState.reset();
           print('Status: $status');
-          if(status=="Success"){
-            Navigator.push(context, MaterialPageRoute(builder: (BuildContext context){
+          showMessage("Registration Successful !!");
+          /*if (status == "Success") {
+            *//*Navigator.push(context, MaterialPageRoute(builder: (BuildContext context){
               return new GetLocation(userId: widget.userId,);
-            }));
-          }
+            }));*//*
+          }*/
           setState(() {
             _isLoading = false;
           });
@@ -230,8 +306,6 @@ class _SignUpState extends State<SignUp> {
         }
       }
     }
-
-
 
     bool isValidFirstName(String input) {
       if (input.trim().isEmpty) return false;
@@ -354,7 +428,7 @@ class _SignUpState extends State<SignUp> {
             SizedBox(
               height: 10.0,
             ),
-            //_currentLocation == null ? CircularProgressIndicator() : mapView,
+           mapView,
           ],
         ),
       ),

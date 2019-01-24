@@ -19,11 +19,11 @@ class SignUp extends StatefulWidget {
   final BaseAuth auth;
   final VoidCallback onSignedUp;
   String userId;
-
+  SignUp({this.auth, this.onSignedUp, this.userId});
   @override
   _SignUpState createState() => _SignUpState();
 
-  SignUp({this.auth, this.onSignedUp, this.userId});
+
 }
 
 enum FormMode { LOGIN, SIGNUP }
@@ -43,7 +43,7 @@ class _SignUpState extends State<SignUp> {
   bool _isIos;
   bool _isLoading;
   String _errorMessage;
-  bool _permission = false;
+  //bool _permission = false;
   String error;
   Map<String, double> _startLocation;
   Map<String, double> _currentLocation;
@@ -57,7 +57,7 @@ class _SignUpState extends State<SignUp> {
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
-    mapController.addMarker(
+    /*mapController.addMarker(
       MarkerOptions(
         position: LatLng(
           position.latitude,
@@ -77,7 +77,7 @@ class _SignUpState extends State<SignUp> {
           zoom: 20.0,
         ),
       ),
-    );
+    );*/
   }
 
   @override
@@ -137,6 +137,7 @@ class _SignUpState extends State<SignUp> {
     });*/
     //if (!mounted) return;
   }
+
   Future<void> _initPlatformState() async {
     Position _position;
     // Platform messages may fail, so we use a try/catch PlatformException.
@@ -160,6 +161,7 @@ class _SignUpState extends State<SignUp> {
       position = _position;
     });
   }
+
   /*initPlatformState() async {
     Map<String, double> _location;
     try {
@@ -194,59 +196,23 @@ class _SignUpState extends State<SignUp> {
     super.dispose();
   }
 
+
   @override
   Widget build(BuildContext context) {
     showMessage(String message, [MaterialColor color = Colors.red]) {
       scaffoldKey.currentState.showSnackBar(
-          new SnackBar(backgroundColor: color, content: new Text(message)));
+          new SnackBar(backgroundColor: color, content: new Text(message),),
+      );
     }
-
-    var mapView = Container(
-      height: MediaQuery.of(context).size.height * .5,
-      width: MediaQuery.of(context).size.width,
-      decoration: BoxDecoration(
-        //border: Border.all(width: 3.0),
-        borderRadius: BorderRadius.circular(4.0),
-      ),
-      child: FutureBuilder<GeolocationStatus>(
-          future: Geolocator().checkGeolocationPermissionStatus(),
-          builder: (BuildContext context,
-              AsyncSnapshot<GeolocationStatus> snapshot) {
-            if (!snapshot.hasData) {
-              return Center(
-                child: ColorLoader2(
-                  color1: Colors.redAccent,
-                  color2: Colors.green,
-                  color3: Colors.amber,
-                ),
-              );
-            }
-
-            if (snapshot.data == GeolocationStatus.disabled) {
-              return showMessage(
-                  'Location services disabled, Enable location services for this App using the device settings.');
-            }
-
-            if (snapshot.data == GeolocationStatus.denied) {
-              return showMessage(
-                  'Access to location denied, Allow access to the location services for this App using the device settings.');
-            }
-
-            return GoogleMap(
-              onMapCreated: _onMapCreated,
-              options: GoogleMapOptions(
-                cameraPosition: CameraPosition(
-                    target: LatLng(
-                      position.latitude,
-                      position.longitude,
-                    ),
-                    zoom: 20.0),
-                mapType: MapType.normal,
-              ),
-            );
-          }),
-    );
-
+    _buildCircularIndicator(){
+      return Center(
+        child: ColorLoader2(
+          color1: Colors.redAccent,
+          color2: Colors.green,
+          color3: Colors.amber,
+        ),
+      );
+    }
     bool _validateAndSave() {
       final form = formKey.currentState;
       if (form.validate()) {
@@ -262,7 +228,12 @@ class _SignUpState extends State<SignUp> {
         _isLoading = true;
       });
       if (_validateAndSave()) {
-        String userId = widget.userId;
+        String userId = widget.auth.getCurrentUser().then((user){
+          if (user?.uid != null) {
+            return user?.uid.toString();
+          }
+
+        }) as String;
         try {
           Name name = new Name(firstName: _firstName, lastName: _lastName);
 
@@ -284,20 +255,20 @@ class _SignUpState extends State<SignUp> {
           print('Status: $status');
           showMessage("Registration Successful !!");
           /*if (status == "Success") {
-            *//*Navigator.push(context, MaterialPageRoute(builder: (BuildContext context){
+            */ /*Navigator.push(context, MaterialPageRoute(builder: (BuildContext context){
               return new GetLocation(userId: widget.userId,);
-            }));*//*
+            }));*/ /*
           }*/
-          setState(() {
+          /*setState(() {
             _isLoading = false;
-          });
+          });*/
           /*if (userId.length > 0 && userId != null) {
-            //widget.onSignedIn();
+            widget.onSignedIn();
           }*/
         } catch (e) {
           print('Error: $e');
           setState(() {
-            _isLoading = false;
+            //_isLoading = false;
             if (_isIos) {
               _errorMessage = e.details;
             } else
@@ -401,6 +372,55 @@ class _SignUpState extends State<SignUp> {
       ),
     );
 
+    _map() {
+      return FutureBuilder<GeolocationStatus>(
+        future: Geolocator().checkGeolocationPermissionStatus(),
+        builder:
+            (BuildContext context, AsyncSnapshot<GeolocationStatus> snapshot) {
+          if (!snapshot.hasData) {
+            return Center(
+              child: ColorLoader2(
+                color1: Colors.redAccent,
+                color2: Colors.green,
+                color3: Colors.amber,
+              ),
+            );
+          }
+
+          if (snapshot.data == GeolocationStatus.disabled) {
+            return showMessage(
+                'Location services disabled, Enable location services for this App using the device settings.');
+          }
+
+          if (snapshot.data == GeolocationStatus.denied) {
+            return showMessage(
+                'Access to location denied, Allow access to the location services for this App using the device settings.');
+          }
+
+          return Container(
+            height: MediaQuery.of(context).size.height * .5,
+            width: MediaQuery.of(context).size.width,
+            decoration: BoxDecoration(
+              //border: Border.all(width: 3.0),
+              borderRadius: BorderRadius.circular(4.0),
+            ),
+            child:GoogleMap(
+              onMapCreated: _onMapCreated,
+              options: GoogleMapOptions(
+                cameraPosition: CameraPosition(
+                    target: LatLng(
+                      position.latitude,
+                      position.longitude,
+                    ),
+                    zoom: 20.0),
+                mapType: MapType.normal,
+              ),
+            ),
+          );
+        },
+      );
+    }
+
     var form = Container(
       padding: EdgeInsets.all(16.0),
       child: Form(
@@ -428,7 +448,7 @@ class _SignUpState extends State<SignUp> {
             SizedBox(
               height: 10.0,
             ),
-           mapView,
+            _map(),
           ],
         ),
       ),
@@ -443,7 +463,7 @@ class _SignUpState extends State<SignUp> {
         /* crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,*/
         children: <Widget>[
-          form,
+          position==null?_buildCircularIndicator():form,
         ],
       ),
     );

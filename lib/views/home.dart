@@ -122,8 +122,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _handleCurrentScreen(){
-    return new StreamBuilder<FirebaseUser>(
-      stream: FirebaseAuth.instance.currentUser().asStream(),
+    return new FutureBuilder<FirebaseUser>(
+        future: FirebaseAuth.instance.currentUser(),
       builder: (BuildContext context, AsyncSnapshot<FirebaseUser> snapshot) {
         /*if(snapshot.connectionState==ConnectionState.waiting){
           return new ColorLoader3(
@@ -133,13 +133,11 @@ class _HomePageState extends State<HomePage> {
         }else{*/
           if (snapshot.hasData) {
             if(snapshot.data.uid!=null){
-              print("out of switch  $snapshot.data.uid.toString()");
               switch (authStatus) {
                 case AuthStatus.NOT_DETERMINED:
                   return _buildWaitingScreen();
                   break;
                 case AuthStatus.NOT_LOGGED_IN:
-                  print("not logged  $snapshot.data.uid.toString()");
                   return new SignIn(
                     auth: widget.auth,
                     onSignedIn: onLoggedIn,
@@ -147,7 +145,6 @@ class _HomePageState extends State<HomePage> {
                   break;
                 case AuthStatus.LOGGED_IN:
                   if ((snapshot.data.uid.length > 0 && snapshot.data.uid != null)){
-                    print("logged in  $snapshot.data.uid.toString()");
                     return new GetLocation(
                       userId: snapshot.data.uid,
                       auth: widget.auth,
@@ -158,7 +155,17 @@ class _HomePageState extends State<HomePage> {
                 default:
                   return _buildWaitingScreen();
               }
+            }else{
+              return new SignIn(
+                auth: widget.auth,
+                onSignedIn: onLoggedIn,
+              );
             }
+          }else if(!snapshot.hasData){
+            return new SignIn(
+              auth: widget.auth,
+              onSignedIn: onLoggedIn,
+            );
           }
         //}
       },

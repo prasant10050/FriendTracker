@@ -18,32 +18,22 @@ class GetLocation extends StatefulWidget {
   final String userId;
   BaseAuth auth;
   VoidCallback onSignedOut;
+  Position position;
 
-  GetLocation({this.userId, this.auth, this.onSignedOut});
+  GetLocation({this.userId, this.auth, this.onSignedOut, this.position});
 
   @override
   _GetLocationState createState() => _GetLocationState();
 }
 
 class _GetLocationState extends State<GetLocation> {
-  /*Location _location =new Location();
-  bool _permission = false;*/
   String error;
-
-  /* Map<String, double> _startLocation;
-  Map<String, double> _currentLocation;
-
-  //StreamSubscription<Map<String, double>> _locationSubscription;*/
   GoogleMapController mapController;
   Marker marker;
-
-  //Location location;
   var userLocation = {};
   CurrentDateTime startDateTime = new CurrentDateTime();
   String currentDateTime;
   UserDatabase userDatabase = new UserDatabase();
-
-  //Getlocator
   StreamSubscription<Position> _positionStreamSubscription;
   final List<Position> _positions = <Position>[];
   Position position;
@@ -51,16 +41,16 @@ class _GetLocationState extends State<GetLocation> {
   final scaffoldKey = new GlobalKey<ScaffoldState>();
   final formKey = new GlobalKey<FormState>();
 
-  //OnMapCreated
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
-    marker = mapController?.addMarker(MarkerOptions(
-      position: LatLng(
-        position.latitude,
-        position.longitude,
+    marker = mapController?.addMarker(
+      MarkerOptions(
+        position: LatLng(
+          position.latitude,
+          position.longitude,
+        ),
+        icon: BitmapDescriptor.defaultMarker,
       ),
-      icon: BitmapDescriptor.defaultMarker,
-    ),
     ) as Marker;
     mapController?.moveCamera(
       CameraUpdate.newCameraPosition(
@@ -74,130 +64,98 @@ class _GetLocationState extends State<GetLocation> {
       ),
     );
   }
-
-  bool _isListening() => !(_positionStreamSubscription == null ||
-      _positionStreamSubscription.isPaused);
-
   @override
   void initState() {
-    /*_location = new Location();*/
-
     super.initState();
-    //initPlatformState();
-    /*_locationSubscription=_location.onLocationChanged().listen((Map<String, double> result) async {
+    if (widget.position != null) {
       setState(() {
-        _currentLocation = result;
+        position = widget.position;
       });
-      currentDateTime=startDateTime.currentDateTime();
-      userLocation['latitude'] = _currentLocation['latitude'];
-      userLocation['longitude'] = _currentLocation['longitude'];
-
+    }
+    //_initPlatformState();
+    final LocationOptions locationOptions = LocationOptions(
+        accuracy: LocationAccuracy.best,
+        distanceFilter: 0,
+        forceAndroidLocationManager: true,
+        timeInterval: 1);
+    final Stream<Position> positionStream =
+        Geolocator().getPositionStream(locationOptions);
+    _positionStreamSubscription =
+        positionStream.listen((Position _position) async {
+      setState(() {
+        position = _position;
+      });
+      CurrentDateTime currentDateTime = new CurrentDateTime();
+      userLocation['latitude'] = position.latitude;
+      userLocation['longitude'] = position.longitude;
+      String status = await userDatabase.updateUserLocation(
+          widget.userId, userLocation, currentDateTime.currentDateTime());
+      print("Location update $status");
       if (marker != null) {
         mapController.removeMarker(marker);
       }
-      marker = await mapController?.addMarker(MarkerOptions(
+      marker = await mapController?.addMarker(
+        MarkerOptions(
           position: LatLng(
-            _currentLocation["latitude"],
-            _currentLocation["longitude"],
+            position.latitude,
+            position.longitude,
           ),
           icon: BitmapDescriptor.defaultMarker,
-      ),
+        ),
       );
-      mapController?.moveCamera(
+      await mapController?.moveCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
             target: LatLng(
-              _currentLocation["latitude"],
-              _currentLocation["longitude"],
+              position.latitude,
+              position.longitude,
             ),
             zoom: 20.0,
           ),
         ),
       );
+    });
+    if (!mounted) return;
+  }
 
-      String status=await userDatabase.updateUserLocation(widget.userId, userLocation,currentDateTime);
-      print("InitiState, location update $status");
-      print("$status $userLocation");
-    });*/
-    if (_positionStreamSubscription == null) {
-      const LocationOptions locationOptions =
-          LocationOptions(accuracy: LocationAccuracy.best, distanceFilter: 10);
-      final Stream<Position> positionStream =
-          Geolocator().getPositionStream(locationOptions);
-      _positionStreamSubscription =
-          positionStream.listen((Position _position) async {
-        setState(() {
-          position = _position;
-        });
-        if (marker != null) {
-          mapController.removeMarker(marker);
-        }
-        marker = await mapController?.addMarker(
-          MarkerOptions(
-            position: LatLng(
-              position.latitude,
-              position.longitude,
-            ),
-            icon: BitmapDescriptor.defaultMarker,
-          ),
-        );
-        await mapController?.moveCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(
-                position.latitude,
-                position.longitude,
-              ),
-              zoom: 20.0,
-            ),
-          ),
-        );
-      });
-      //_positionStreamSubscription.pause();
-      //_positionStreamSubscription.resume();
+  Future<void> updateLocation(Position position) async {
+    CurrentDateTime currentDateTime = new CurrentDateTime();
+    userLocation['latitude'] = position.latitude;
+    userLocation['longitude'] = position.longitude;
+    String status = await userDatabase.updateUserLocation(
+        widget.userId, userLocation, currentDateTime.currentDateTime());
+    print("Location update $status");
+  }
+
+  Future<void> _initPlatformState() async {
+    Position _position;
+    try {
+      final Geolocator geolocator = Geolocator()
+        ..forceAndroidLocationManager = true;
+      _position = await geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.best);
+    } on PlatformException {
+      _position = null;
+    }
+    if (!mounted) {
+      return;
     }
 
-    /*setState(() {
-      if (_positionStreamSubscription.isPaused) {
-        _positionStreamSubscription.resume();
-      } else {
-        _positionStreamSubscription.pause();
-      }
-    });*/
-    if (!mounted) return;
+    setState(() {
+      position = _position;
+      print("init position -" + position.latitude.toString());
+    });
   }
 
   @override
   void dispose() {
-    //_locationSubscription.cancel();
     if (_positionStreamSubscription != null) {
       _positionStreamSubscription.cancel();
       _positionStreamSubscription = null;
     }
-
     super.dispose();
   }
 
-  /*initPlatformState() async {
-    Map<String, double> location;
-    try {
-      _permission = await _location.hasPermission();
-      location = await _location.getLocation();
-      error = null;
-    } on PlatformException catch (e) {
-      if (e.code == 'PERMISSION_DENIED') {
-        error = 'Permission denied';
-      } else if (e.code == 'PERMISSION_DENIED_NEVER_ASK') {
-        error =
-            'Permission denied - please ask the user to enable it from the app settings';
-      }
-      location = null;
-    }
-    if (!mounted) return;
-    setState(() {
-      _startLocation = location;
-    });
-  }*/
   showMessage(String message, [MaterialColor color = Colors.red]) {
     scaffoldKey.currentState.showSnackBar(
         new SnackBar(backgroundColor: color, content: new Text(message)));
@@ -215,27 +173,26 @@ class _GetLocationState extends State<GetLocation> {
 
   @override
   Widget build(BuildContext context) {
-
     var mapView = FutureBuilder<GeolocationStatus>(
         future: Geolocator().checkGeolocationPermissionStatus(),
         builder:
             (BuildContext context, AsyncSnapshot<GeolocationStatus> snapshot) {
-          if (!snapshot.hasData) {
+          /*if (!snapshot.hasData) {
             return _buildCircularIndicator();
             print("No DATA");
-          }
-
+          }*/
           if (snapshot.data == GeolocationStatus.denied) {
             return showMessage(
                 'Location services disabled, Enable location services for this App using the device settings.');
           }
           if (snapshot.data == GeolocationStatus.granted) {
+            //if (snapshot.hasData) {
             return Stack(
               fit: StackFit.expand,
               children: <Widget>[
                 Container(
-                  //height: MediaQuery.of(context).size.height,
-                  //width: MediaQuery.of(context).size.width,
+                  height: MediaQuery.of(context).size.height,
+                  width: MediaQuery.of(context).size.width,
                   child: GoogleMap(
                     onMapCreated: _onMapCreated,
                     options: GoogleMapOptions(
@@ -251,6 +208,7 @@ class _GetLocationState extends State<GetLocation> {
                 ),
               ],
             );
+            //}
           }
         });
 
@@ -264,8 +222,6 @@ class _GetLocationState extends State<GetLocation> {
         }
         await widget.auth.signOut();
         widget.onSignedOut();
-        //_locationSubscription.cancel();
-        //last location
         CurrentDateTime currentDateTime = new CurrentDateTime();
         userLocation['latitude'] = position.latitude;
         userLocation['longitude'] = position.longitude;
@@ -278,7 +234,7 @@ class _GetLocationState extends State<GetLocation> {
     }
 
     return Scaffold(
-      //resizeToAvoidBottomPadding: false,
+      resizeToAvoidBottomPadding: false,
       key: scaffoldKey,
       appBar: AppBar(
         actions: <Widget>[

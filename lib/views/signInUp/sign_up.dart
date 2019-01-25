@@ -36,20 +36,10 @@ enum AuthStatus {
 class _SignUpState extends State<SignUp> {
   final scaffoldKey = new GlobalKey<ScaffoldState>();
   final formKey = new GlobalKey<FormState>();
-  String _firstName, _lastName, _phoneNUmber, _dateTime;
-
-  FormMode _formMode = FormMode.SIGNUP;
+  String _firstName, _lastName, _phoneNUmber, _dateTime,_errorMessage;
   Location location = new Location();
   bool _isIos;
-  bool _isLoading;
-  String _errorMessage;
-
-  //bool _permission = false;
   String error;
-  Map<String, double> _startLocation;
-  Map<String, double> _currentLocation;
-
-  //StreamSubscription<Map<String, double>> _locationSubscription;
   GoogleMapController mapController;
   Marker marker;
   Position position;
@@ -59,7 +49,7 @@ class _SignUpState extends State<SignUp> {
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
-    marker =mapController.addMarker(
+    marker = mapController?.addMarker(
       MarkerOptions(
         position: LatLng(
           position.latitude,
@@ -69,7 +59,7 @@ class _SignUpState extends State<SignUp> {
         visible: true,
       ),
     ) as Marker;
-    mapController.moveCamera(
+    mapController?.moveCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           target: LatLng(
@@ -86,74 +76,12 @@ class _SignUpState extends State<SignUp> {
   void initState() {
     super.initState();
     _initPlatformState();
-    /*currentLocation.geoLocationStatus().then((v){
-      if(v==GeolocationStatus.disabled) {
-        setState(() {
-          geoLocationStatus =
-          "Location services disabled,Enable location services for this App using the device settings.";
-        });
-      }
-      else if(v==GeolocationStatus.denied) {
-        setState(() {
-          geoLocationStatus =
-          "Allow access to the location services for this App using the device settings.";
-        });
-      }
-      else if(v==GeolocationStatus.granted){
-
-      }
-    });*/
-
-    //location = new Location();
-    //initPlatformState();
-    /*location.onLocationChanged().listen((Map<String, double> result) async {
-      setState(() {
-        _currentLocation = result;
-        print("$_currentLocation");
-      });
-
-      */ /*if (marker != null) {
-        mapController.removeMarker(marker);
-      }*/ /*
-      marker = await mapController?.addMarker(
-        MarkerOptions(
-          position: LatLng(
-            _currentLocation["latitude"],
-            _currentLocation["longitude"],
-          ),
-          icon: BitmapDescriptor.defaultMarker,
-          visible: true,
-        );
-      );
-      */ /*await*/ /* mapController?.moveCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(
-              _currentLocation["latitude"],
-              _currentLocation["longitude"],
-            ),
-            zoom: 20.0,
-          ),
-        ),
-      );
-    });*/
-    //if (!mounted) return;
   }
 
   Future<void> _initPlatformState() async {
-    Position _position;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    /*try {
-      final Geolocator geolocator = Geolocator()
-        ..forceAndroidLocationManager = true;
-      position = await geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.bestForNavigation);
-    } on PlatformException {
-      position = null;
-    }*/
-    if (_positionStreamSubscription == null) {
-      const LocationOptions locationOptions =
-          LocationOptions(accuracy: LocationAccuracy.best, distanceFilter: 10);
+    //if (_positionStreamSubscription == null) {
+      final LocationOptions locationOptions =
+          LocationOptions(accuracy: LocationAccuracy.best, distanceFilter: 10,forceAndroidLocationManager: true);
       final Stream<Position> positionStream =
           Geolocator().getPositionStream(locationOptions);
       _positionStreamSubscription =
@@ -185,54 +113,16 @@ class _SignUpState extends State<SignUp> {
           ),
         );
       });
-      //_positionStreamSubscription.pause();
-    }
-   /* setState(() {
-      if (_positionStreamSubscription.isPaused) {
-        _positionStreamSubscription.resume();
-      } else {
-        _positionStreamSubscription.pause();
-      }
-    });*/
+    //}
     if (!mounted) return;
   }
 
-  /*initPlatformState() async {
-    Map<String, double> _location;
-    try {
-      _permission = await location.hasPermission();
-      _location = await location.getLocation();
-      */ /*location.onLocationChanged().listen((result){
-        setState(() {
-          _currentLocation=result;
-          print("$_currentLocation");
-        });
-      });*/ /*
-      error = null;
-    } on PlatformException catch (e) {
-      if (e.code == 'PERMISSION_DENIED') {
-        error = 'Permission denied';
-      } else if (e.code == 'PERMISSION_DENIED_NEVER_ASK') {
-        error =
-        'Permission denied - please ask the user to enable it from the app settings';
-      }
-      _location = null;
-    }
-    if (!mounted) return;
-    setState(() {
-      _startLocation = _location;
-      print("$_startLocation");
-    });
-  }*/
-
   @override
   void dispose() {
-    //_locationSubscription.cancel();
     if (_positionStreamSubscription != null) {
       _positionStreamSubscription.cancel();
       _positionStreamSubscription = null;
     }
-
     super.dispose();
   }
 
@@ -269,7 +159,6 @@ class _SignUpState extends State<SignUp> {
     _validateAndSubmit() async {
       setState(() {
         _errorMessage = "";
-        _isLoading = true;
       });
       if (_validateAndSave()) {
         String userId = "";
@@ -294,20 +183,17 @@ class _SignUpState extends State<SignUp> {
           print('Status: $status');
           showMessage("Registration Successful !!");
           if (status == "Success") {
-             Navigator.push(context, MaterialPageRoute(builder: (BuildContext context){
-              return new GetLocation(userId: widget.userId,);
+            Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (BuildContext context) {
+              return new GetLocation(
+                userId: widget.userId,
+                position: position,
+              );
             }));
           }
-          /*setState(() {
-            _isLoading = false;
-          });*/
-          /*if (userId.length > 0 && userId != null) {
-            widget.onSignedIn();
-          }*/
         } catch (e) {
           print('Error: $e');
           setState(() {
-            //_isLoading = false;
             if (_isIos) {
               _errorMessage = e.details;
             } else
@@ -416,7 +302,6 @@ class _SignUpState extends State<SignUp> {
         future: Geolocator().checkGeolocationPermissionStatus(),
         builder:
             (BuildContext context, AsyncSnapshot<GeolocationStatus> snapshot) {
-
           if (snapshot.data == GeolocationStatus.disabled) {
             return showMessage(
                 'Location services disabled, Enable location services for this App using the device settings.');
@@ -499,7 +384,7 @@ class _SignUpState extends State<SignUp> {
             SizedBox(
               height: 10.0,
             ),
-            position==null?_buildCircularIndicator():_map(),
+            position == null ? _buildCircularIndicator() : _map(),
           ],
         ),
       ),
@@ -512,8 +397,6 @@ class _SignUpState extends State<SignUp> {
         title: Text("Sign Up"),
       ),
       body: Stack(
-        /* crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,*/
         children: <Widget>[
           position == null ? _buildCircularIndicator() : form,
         ],

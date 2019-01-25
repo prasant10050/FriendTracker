@@ -22,8 +22,9 @@ enum AuthStatus {
 
 class _HomePageState extends State<HomePage> {
   BaseAuth auth;
-  AuthStatus authStatus = AuthStatus.NOT_DETERMINED;
+  AuthStatus authStatus;// = AuthStatus.NOT_DETERMINED;
   String _userId = "";
+
   @override
   void initState() {
     // TODO: implement initState
@@ -39,10 +40,12 @@ class _HomePageState extends State<HomePage> {
     });
     //FirebaseAuth.instance.onAuthStateChanged.listen(_handleUser);
   }
+
   void _handleUser(FirebaseUser event) {
     setState(() {
-      authStatus=event.uid==null?AuthStatus.NOT_LOGGED_IN : AuthStatus.LOGGED_IN;
-      _userId=event.uid.toString();
+      authStatus =
+          event.uid == null ? AuthStatus.NOT_LOGGED_IN : AuthStatus.LOGGED_IN;
+      _userId = event.uid.toString();
       //authStatus=_userId == null ? AuthStatus.NOT_LOGGED_IN : AuthStatus.LOGGED_IN;
     });
     //onSignedOut();
@@ -51,10 +54,7 @@ class _HomePageState extends State<HomePage> {
   void onLoggedIn() {
     widget.auth.getCurrentUser().then((user) {
       setState(() {
-        if (user.uid != null) {
-          _userId = user?.uid;
-        }
-        //_userId = user?.uid.toString();
+        _userId = user.uid.toString();
       });
     });
     setState(() {
@@ -78,99 +78,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /*I am using a StreamBuilder with onAuthStateChanged as a stream. I also have this issue,
-  onAuthStateChanged seems not to be always called after the authentication state is changed.
-  Sometimes yes, sometimes no.
-  */
-
-  Widget _handleStreamCurrentScreen() {
-    return new StreamBuilder<FirebaseUser>(
-        stream: FirebaseAuth.instance.onAuthStateChanged,
-        builder: (BuildContext context, snapshot) {
-          /*if (snapshot.connectionState == ConnectionState.waiting) {
-            return new ColorLoader3(
-              radius: 15.0,
-              dotRadius: 6.0,
-            );
-          } else {*/
-            if (snapshot.hasData) {
-              switch (authStatus) {
-                case AuthStatus.NOT_DETERMINED:
-                  return _buildWaitingScreen();
-                  break;
-                case AuthStatus.NOT_LOGGED_IN:
-                  return new SignIn(
-                    auth: widget.auth,
-                    onSignedIn: onLoggedIn,
-                  );
-                  break;
-                case AuthStatus.LOGGED_IN:
-                  if ((_userId.length > 0 && _userId != null)){
-                    return new GetLocation(
-                      userId: _userId,
-                      auth: widget.auth,
-                      onSignedOut: onSignedOut,
-                    );
-                  } else return _buildWaitingScreen();
-                  break;
-                default:
-                  return _buildWaitingScreen();
-              }
-            }
-          //}
-        });
-  }
-
-  Widget _handleCurrentScreen(){
-    return new FutureBuilder<FirebaseUser>(
-        future: FirebaseAuth.instance.currentUser(),
-      builder: (BuildContext context, AsyncSnapshot<FirebaseUser> snapshot) {
-        /*if(snapshot.connectionState==ConnectionState.waiting){
-          return new ColorLoader3(
-            radius: 15.0,
-            dotRadius: 6.0,
-          );
-        }else{*/
-          if (snapshot.hasData) {
-            if(snapshot.data.uid!=null){
-              switch (authStatus) {
-                case AuthStatus.NOT_DETERMINED:
-                  return _buildWaitingScreen();
-                  break;
-                case AuthStatus.NOT_LOGGED_IN:
-                  return new SignIn(
-                    auth: widget.auth,
-                    onSignedIn: onLoggedIn,
-                  );
-                  break;
-                case AuthStatus.LOGGED_IN:
-                  if ((snapshot.data.uid.length > 0 && snapshot.data.uid != null)){
-                    return new GetLocation(
-                      userId: snapshot.data.uid,
-                      auth: widget.auth,
-                      onSignedOut: onSignedOut,
-                    );
-                  } else return _buildWaitingScreen();
-                  break;
-                default:
-                  return _buildWaitingScreen();
-              }
-            }else{
-              return new SignIn(
-                auth: widget.auth,
-                onSignedIn: onLoggedIn,
-              );
-            }
-          }else if(!snapshot.hasData){
-            return new SignIn(
-              auth: widget.auth,
-              onSignedIn: onLoggedIn,
-            );
-          }
-        //}
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -185,18 +92,17 @@ class _HomePageState extends State<HomePage> {
         );
         break;
       case AuthStatus.LOGGED_IN:
-        if ((_userId.length > 0 && _userId != null)){
+        if (_userId.length > 0 && _userId != null) {
           return new GetLocation(
             userId: _userId,
             auth: widget.auth,
             onSignedOut: onSignedOut,
           );
-        } else return _buildWaitingScreen();
+        } else
+          return _buildWaitingScreen();
         break;
       default:
         return _buildWaitingScreen();
     }
-    //return _handleCurrentScreen();
   }
-
 }

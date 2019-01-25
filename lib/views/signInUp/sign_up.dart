@@ -19,11 +19,11 @@ class SignUp extends StatefulWidget {
   final BaseAuth auth;
   final VoidCallback onSignedUp;
   String userId;
+
   SignUp({this.auth, this.onSignedUp, this.userId});
+
   @override
   _SignUpState createState() => _SignUpState();
-
-
 }
 
 enum FormMode { LOGIN, SIGNUP }
@@ -43,6 +43,7 @@ class _SignUpState extends State<SignUp> {
   bool _isIos;
   bool _isLoading;
   String _errorMessage;
+
   //bool _permission = false;
   String error;
   Map<String, double> _startLocation;
@@ -52,12 +53,13 @@ class _SignUpState extends State<SignUp> {
   GoogleMapController mapController;
   Marker marker;
   Position position;
+  StreamSubscription<Position> _positionStreamSubscription;
   CurrentLocation currentLocation = new CurrentLocation();
   String geoLocationStatus;
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
-    /*mapController.addMarker(
+    marker =mapController.addMarker(
       MarkerOptions(
         position: LatLng(
           position.latitude,
@@ -66,7 +68,7 @@ class _SignUpState extends State<SignUp> {
         icon: BitmapDescriptor.defaultMarker,
         visible: true,
       ),
-    );
+    ) as Marker;
     mapController.moveCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
@@ -77,7 +79,7 @@ class _SignUpState extends State<SignUp> {
           zoom: 20.0,
         ),
       ),
-    );*/
+    );
   }
 
   @override
@@ -141,25 +143,58 @@ class _SignUpState extends State<SignUp> {
   Future<void> _initPlatformState() async {
     Position _position;
     // Platform messages may fail, so we use a try/catch PlatformException.
-    try {
+    /*try {
       final Geolocator geolocator = Geolocator()
         ..forceAndroidLocationManager = true;
       position = await geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.bestForNavigation);
     } on PlatformException {
       position = null;
+    }*/
+    if (_positionStreamSubscription == null) {
+      const LocationOptions locationOptions =
+          LocationOptions(accuracy: LocationAccuracy.best, distanceFilter: 10);
+      final Stream<Position> positionStream =
+          Geolocator().getPositionStream(locationOptions);
+      _positionStreamSubscription =
+          positionStream.listen((Position _position) async {
+        setState(() {
+          position = _position;
+        });
+        if (marker != null) {
+          mapController.removeMarker(marker);
+        }
+        marker = await mapController?.addMarker(
+          MarkerOptions(
+            position: LatLng(
+              position.latitude,
+              position.longitude,
+            ),
+            icon: BitmapDescriptor.defaultMarker,
+          ),
+        );
+        await mapController?.moveCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(
+                position.latitude,
+                position.longitude,
+              ),
+              zoom: 20.0,
+            ),
+          ),
+        );
+      });
+      //_positionStreamSubscription.pause();
     }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      position = _position;
-    });
+   /* setState(() {
+      if (_positionStreamSubscription.isPaused) {
+        _positionStreamSubscription.resume();
+      } else {
+        _positionStreamSubscription.pause();
+      }
+    });*/
+    if (!mounted) return;
   }
 
   /*initPlatformState() async {
@@ -193,18 +228,26 @@ class _SignUpState extends State<SignUp> {
   @override
   void dispose() {
     //_locationSubscription.cancel();
+    if (_positionStreamSubscription != null) {
+      _positionStreamSubscription.cancel();
+      _positionStreamSubscription = null;
+    }
+
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
     showMessage(String message, [MaterialColor color = Colors.red]) {
       scaffoldKey.currentState.showSnackBar(
-          new SnackBar(backgroundColor: color, content: new Text(message),),
+        new SnackBar(
+          backgroundColor: color,
+          content: new Text(message),
+        ),
       );
     }
-    _buildCircularIndicator(){
+
+    _buildCircularIndicator() {
       return Center(
         child: ColorLoader2(
           color1: Colors.redAccent,
@@ -213,6 +256,7 @@ class _SignUpState extends State<SignUp> {
         ),
       );
     }
+
     bool _validateAndSave() {
       final form = formKey.currentState;
       if (form.validate()) {
@@ -228,12 +272,7 @@ class _SignUpState extends State<SignUp> {
         _isLoading = true;
       });
       if (_validateAndSave()) {
-        String userId = widget.auth.getCurrentUser().then((user){
-          if (user?.uid != null) {
-            return user?.uid.toString();
-          }
-
-        }) as String;
+        String userId = "";
         try {
           Name name = new Name(firstName: _firstName, lastName: _lastName);
 
@@ -250,15 +289,15 @@ class _SignUpState extends State<SignUp> {
           print(user);
 
           UserDatabase userDatabase = new UserDatabase();
-          String status = await userDatabase.addNewUser(userId, user);
+          String status = await userDatabase.addNewUser(widget.userId, user);
           formKey.currentState.reset();
           print('Status: $status');
           showMessage("Registration Successful !!");
-          /*if (status == "Success") {
-            */ /*Navigator.push(context, MaterialPageRoute(builder: (BuildContext context){
+          if (status == "Success") {
+             Navigator.push(context, MaterialPageRoute(builder: (BuildContext context){
               return new GetLocation(userId: widget.userId,);
-            }));*/ /*
-          }*/
+            }));
+          }
           /*setState(() {
             _isLoading = false;
           });*/
@@ -377,15 +416,6 @@ class _SignUpState extends State<SignUp> {
         future: Geolocator().checkGeolocationPermissionStatus(),
         builder:
             (BuildContext context, AsyncSnapshot<GeolocationStatus> snapshot) {
-          if (!snapshot.hasData) {
-            return Center(
-              child: ColorLoader2(
-                color1: Colors.redAccent,
-                color2: Colors.green,
-                color3: Colors.amber,
-              ),
-            );
-          }
 
           if (snapshot.data == GeolocationStatus.disabled) {
             return showMessage(
@@ -396,7 +426,28 @@ class _SignUpState extends State<SignUp> {
             return showMessage(
                 'Access to location denied, Allow access to the location services for this App using the device settings.');
           }
-
+          if (snapshot.data == GeolocationStatus.granted) {
+            return Container(
+              height: MediaQuery.of(context).size.height * .5,
+              width: MediaQuery.of(context).size.width,
+              decoration: BoxDecoration(
+                //border: Border.all(width: 3.0),
+                borderRadius: BorderRadius.circular(4.0),
+              ),
+              child: GoogleMap(
+                onMapCreated: _onMapCreated,
+                options: GoogleMapOptions(
+                  cameraPosition: CameraPosition(
+                      target: LatLng(
+                        position.latitude,
+                        position.longitude,
+                      ),
+                      zoom: 20.0),
+                  mapType: MapType.normal,
+                ),
+              ),
+            );
+          }
           return Container(
             height: MediaQuery.of(context).size.height * .5,
             width: MediaQuery.of(context).size.width,
@@ -404,7 +455,7 @@ class _SignUpState extends State<SignUp> {
               //border: Border.all(width: 3.0),
               borderRadius: BorderRadius.circular(4.0),
             ),
-            child:GoogleMap(
+            child: GoogleMap(
               onMapCreated: _onMapCreated,
               options: GoogleMapOptions(
                 cameraPosition: CameraPosition(
@@ -448,7 +499,7 @@ class _SignUpState extends State<SignUp> {
             SizedBox(
               height: 10.0,
             ),
-            _map(),
+            position==null?_buildCircularIndicator():_map(),
           ],
         ),
       ),
@@ -456,6 +507,7 @@ class _SignUpState extends State<SignUp> {
 
     return Scaffold(
       resizeToAvoidBottomPadding: false,
+      key: scaffoldKey,
       appBar: AppBar(
         title: Text("Sign Up"),
       ),
@@ -463,7 +515,7 @@ class _SignUpState extends State<SignUp> {
         /* crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,*/
         children: <Widget>[
-          position==null?_buildCircularIndicator():form,
+          position == null ? _buildCircularIndicator() : form,
         ],
       ),
     );

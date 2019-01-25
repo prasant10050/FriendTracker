@@ -15,7 +15,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 
 class GetLocation extends StatefulWidget {
-  String userId;
+  final String userId;
   BaseAuth auth;
   VoidCallback onSignedOut;
 
@@ -30,7 +30,7 @@ class _GetLocationState extends State<GetLocation> {
   bool _permission = false;*/
   String error;
 
- /* Map<String, double> _startLocation;
+  /* Map<String, double> _startLocation;
   Map<String, double> _currentLocation;
 
   //StreamSubscription<Map<String, double>> _locationSubscription;*/
@@ -54,7 +54,7 @@ class _GetLocationState extends State<GetLocation> {
   //OnMapCreated
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
-    /*marker = mapController?.addMarker(MarkerOptions(
+    marker = mapController?.addMarker(MarkerOptions(
       position: LatLng(
         position.latitude,
         position.longitude,
@@ -72,7 +72,7 @@ class _GetLocationState extends State<GetLocation> {
           zoom: 20.0,
         ),
       ),
-    );*/
+    );
   }
 
   bool _isListening() => !(_positionStreamSubscription == null ||
@@ -124,20 +124,22 @@ class _GetLocationState extends State<GetLocation> {
           LocationOptions(accuracy: LocationAccuracy.best, distanceFilter: 10);
       final Stream<Position> positionStream =
           Geolocator().getPositionStream(locationOptions);
-      _positionStreamSubscription = positionStream.listen((Position _position) async {
+      _positionStreamSubscription =
+          positionStream.listen((Position _position) async {
         setState(() {
-          position=_position;
+          position = _position;
         });
         if (marker != null) {
           mapController.removeMarker(marker);
         }
-        marker = await mapController?.addMarker(MarkerOptions(
-          position: LatLng(
-            position.latitude,
-            position.longitude,
+        marker = await mapController?.addMarker(
+          MarkerOptions(
+            position: LatLng(
+              position.latitude,
+              position.longitude,
+            ),
+            icon: BitmapDescriptor.defaultMarker,
           ),
-          icon: BitmapDescriptor.defaultMarker,
-        ),
         );
         await mapController?.moveCamera(
           CameraUpdate.newCameraPosition(
@@ -151,17 +153,17 @@ class _GetLocationState extends State<GetLocation> {
           ),
         );
       });
-      _positionStreamSubscription.pause();
+      //_positionStreamSubscription.pause();
       //_positionStreamSubscription.resume();
     }
 
-    setState(() {
+    /*setState(() {
       if (_positionStreamSubscription.isPaused) {
         _positionStreamSubscription.resume();
       } else {
         _positionStreamSubscription.pause();
       }
-    });
+    });*/
     if (!mounted) return;
   }
 
@@ -196,23 +198,23 @@ class _GetLocationState extends State<GetLocation> {
       _startLocation = location;
     });
   }*/
+  showMessage(String message, [MaterialColor color = Colors.red]) {
+    scaffoldKey.currentState.showSnackBar(
+        new SnackBar(backgroundColor: color, content: new Text(message)));
+  }
+
+  _buildCircularIndicator() {
+    return Center(
+      child: ColorLoader2(
+        color1: Colors.redAccent,
+        color2: Colors.green,
+        color3: Colors.amber,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    showMessage(String message, [MaterialColor color = Colors.red]) {
-      scaffoldKey.currentState.showSnackBar(
-          new SnackBar(backgroundColor: color, content: new Text(message)));
-    }
-
-    _buildCircularIndicator(){
-      return Center(
-        child: ColorLoader2(
-          color1: Colors.redAccent,
-          color2: Colors.green,
-          color3: Colors.amber,
-        ),
-      );
-    }
 
     var mapView = FutureBuilder<GeolocationStatus>(
         future: Geolocator().checkGeolocationPermissionStatus(),
@@ -227,28 +229,29 @@ class _GetLocationState extends State<GetLocation> {
             return showMessage(
                 'Location services disabled, Enable location services for this App using the device settings.');
           }
-
-          return Stack(
-            fit: StackFit.expand,
-            children: <Widget>[
-              Container(
-                //height: MediaQuery.of(context).size.height,
-                //width: MediaQuery.of(context).size.width,
-                child: GoogleMap(
-                  onMapCreated: _onMapCreated,
-                  options: GoogleMapOptions(
-                    cameraPosition: CameraPosition(
-                        target: LatLng(
-                          position.latitude,
-                          position.longitude,
-                        ),
-                        zoom: 20.0),
-                    mapType: MapType.normal,
+          if (snapshot.data == GeolocationStatus.granted) {
+            return Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                Container(
+                  //height: MediaQuery.of(context).size.height,
+                  //width: MediaQuery.of(context).size.width,
+                  child: GoogleMap(
+                    onMapCreated: _onMapCreated,
+                    options: GoogleMapOptions(
+                      cameraPosition: CameraPosition(
+                          target: LatLng(
+                            position.latitude,
+                            position.longitude,
+                          ),
+                          zoom: 20.0),
+                      mapType: MapType.normal,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
+              ],
+            );
+          }
         });
 
     _signOut() async {
@@ -276,6 +279,7 @@ class _GetLocationState extends State<GetLocation> {
 
     return Scaffold(
       //resizeToAvoidBottomPadding: false,
+      key: scaffoldKey,
       appBar: AppBar(
         actions: <Widget>[
           new IconButton(

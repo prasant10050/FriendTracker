@@ -56,7 +56,7 @@ class _SignInState extends State<SignIn> {
         } if(_formMode==FormMode.SIGNUP) {
           userId = await widget.auth.signUp(_email, _password);
           print('Signed up user: $userId');
-          Navigator.push(context, MaterialPageRoute(builder: (BuildContext context)=>new SignUp(auth: widget.auth,userId: userId.toString(),),),);
+          return Navigator.push(context, MaterialPageRoute(builder: (BuildContext context)=>new SignUp(auth: widget.auth,userId: userId.toString(),),),);
         }
         setState(() {
           _isLoading = false;
@@ -247,6 +247,7 @@ class _SignInState extends State<SignIn> {
     _isIos = Theme.of(context).platform == TargetPlatform.iOS;
     return Scaffold(
       resizeToAvoidBottomPadding: false,
+      key:scaffoldKey,
       appBar: AppBar(
         title: Text("Sign In"),
       ),

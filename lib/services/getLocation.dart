@@ -64,6 +64,7 @@ class _GetLocationState extends State<GetLocation> {
       ),
     );
   }
+
   @override
   void initState() {
     super.initState();
@@ -127,32 +128,9 @@ class _GetLocationState extends State<GetLocation> {
     print("Location update $status");
   }
 
-  Future<void> _initPlatformState() async {
-    Position _position;
-    try {
-      final Geolocator geolocator = Geolocator()
-        ..forceAndroidLocationManager = true;
-      _position = await geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.best);
-    } on PlatformException {
-      _position = null;
-    }
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      position = _position;
-      print("init position -" + position.latitude.toString());
-    });
-  }
-
   @override
   void dispose() {
-    if (_positionStreamSubscription != null) {
-      _positionStreamSubscription.cancel();
-      _positionStreamSubscription = null;
-    }
+    _positionStreamSubscription.cancel();
     super.dispose();
   }
 

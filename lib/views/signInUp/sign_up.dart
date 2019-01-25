@@ -36,7 +36,7 @@ enum AuthStatus {
 class _SignUpState extends State<SignUp> {
   final scaffoldKey = new GlobalKey<ScaffoldState>();
   final formKey = new GlobalKey<FormState>();
-  String _firstName, _lastName, _phoneNUmber, _dateTime,_errorMessage;
+  String _firstName, _lastName, _phoneNUmber, _dateTime, _errorMessage;
   Location location = new Location();
   bool _isIos;
   String error;
@@ -80,49 +80,48 @@ class _SignUpState extends State<SignUp> {
 
   Future<void> _initPlatformState() async {
     //if (_positionStreamSubscription == null) {
-      final LocationOptions locationOptions =
-          LocationOptions(accuracy: LocationAccuracy.best, distanceFilter: 10,forceAndroidLocationManager: true);
-      final Stream<Position> positionStream =
-          Geolocator().getPositionStream(locationOptions);
-      _positionStreamSubscription =
-          positionStream.listen((Position _position) async {
-        setState(() {
-          position = _position;
-        });
-        if (marker != null) {
-          mapController.removeMarker(marker);
-        }
-        marker = await mapController?.addMarker(
-          MarkerOptions(
-            position: LatLng(
+    final LocationOptions locationOptions = LocationOptions(
+        accuracy: LocationAccuracy.best,
+        distanceFilter: 10,
+        forceAndroidLocationManager: true);
+    final Stream<Position> positionStream =
+        Geolocator().getPositionStream(locationOptions);
+    _positionStreamSubscription =
+        positionStream.listen((Position _position) async {
+      setState(() {
+        position = _position;
+      });
+      if (marker != null) {
+        mapController.removeMarker(marker);
+      }
+      marker = await mapController?.addMarker(
+        MarkerOptions(
+          position: LatLng(
+            position.latitude,
+            position.longitude,
+          ),
+          icon: BitmapDescriptor.defaultMarker,
+        ),
+      );
+      await mapController?.moveCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(
               position.latitude,
               position.longitude,
             ),
-            icon: BitmapDescriptor.defaultMarker,
+            zoom: 20.0,
           ),
-        );
-        await mapController?.moveCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(
-                position.latitude,
-                position.longitude,
-              ),
-              zoom: 20.0,
-            ),
-          ),
-        );
-      });
+        ),
+      );
+    });
     //}
     if (!mounted) return;
   }
 
   @override
   void dispose() {
-    if (_positionStreamSubscription != null) {
-      _positionStreamSubscription.cancel();
-      _positionStreamSubscription = null;
-    }
+    _positionStreamSubscription.cancel();
     super.dispose();
   }
 
